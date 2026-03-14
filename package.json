@@ -1,0 +1,14 @@
+{
+  "name": "fullstack-template",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Enterprise AI Production & Research Lab: Next.js + tRPC + React Native + Docker + CI/CD",
+  "scripts": {
+    "dev": "echo 'Run dev servers from apps/<app-name>/ — see README.md'",
+    "lint": "echo 'Run lint from apps/<app-name>/ — see .agent/capabilities/code-audit.md'",
+    "test": "echo 'Run tests from apps/<app-name>/ — see .agent/workflows/code-audit-fix.md'"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}

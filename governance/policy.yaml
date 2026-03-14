@@ -1,0 +1,159 @@
+# Governance Policy
+#
+# Defines SLA tiers, security baselines, and compliance requirements
+# for all apps managed from this lab. Read by agents, n8n workflows,
+# and audit tooling to enforce standards at scale.
+#
+# This file is AUTHORITATIVE — do not override these values in
+# individual app configs without explicit human approval.
+
+---
+
+# ─── SLA Tiers ───────────────────────────────────────────────────────
+# Each app in labs-config.yaml declares one of these tiers.
+# The tier determines which quality gates, monitoring, and response
+# expectations apply.
+
+sla_tiers:
+  experimental:
+    description: Prototype or research project
+    uptime_target: null                # no uptime commitment
+    environments: [dev]
+    ci_required: false
+    security_scan: optional
+    observability: optional
+    incident_response: best_effort
+    audit_frequency: annual
+    data_classification: internal
+
+  basic:
+    description: Internal tool or early-stage product
+    uptime_target: "95%"
+    environments: [dev, staging]
+    ci_required: true
+    security_scan: required_before_release
+    observability: structured_logging
+    incident_response: next_business_day
+    audit_frequency: semi_annual
+    data_classification: internal
+
+  standard:
+    description: Production app with real users
+    uptime_target: "99.5%"
+    environments: [dev, staging, prod]
+    ci_required: true
+    security_scan: required_on_every_pr
+    observability: structured_logging_and_metrics
+    incident_response: 4_hours
+    audit_frequency: quarterly
+    data_classification: confidential
+    additional_requirements:
+      - critical_path_hardening
+      - perf_baseline
+
+  critical:
+    description: Revenue, compliance, or safety-sensitive system
+    uptime_target: "99.9%"
+    environments: [dev, staging, prod, dr]
+    ci_required: true
+    security_scan: required_on_every_pr
+    observability: full_otel_with_tracing
+    incident_response: 1_hour
+    audit_frequency: quarterly
+    data_classification: restricted
+    additional_requirements:
+      - critical_path_hardening
+      - perf_baseline
+      - disaster_recovery_plan
+      - data_encryption_at_rest
+      - access_audit_logging
+
+# ─── Security Baselines ─────────────────────────────────────────────
+# Minimum security requirements that ALL apps must meet regardless
+# of SLA tier.
+
+security_baselines:
+  secrets_management:
+    - No secrets in code, docs, or CI logs
+    - All secrets via environment variables or vault
+    - Gitleaks scan on every PR to main
+
+  authentication:
+    - JWT or session-based auth required for protected routes
+    - Passwords hashed with bcrypt (cost ≥ 12) or argon2
+    - Session tokens rotated on privilege escalation
+
+  input_validation:
+    - All user input validated and sanitized server-side
+    - SQL queries parameterized — no string concatenation
+    - File uploads validated by type and size
+
+  dependency_management:
+    - npm audit run weekly (automated) and before releases
+    - Critical/high vulnerabilities patched within 7 days
+    - No dependencies with known CVEs in production
+
+  logging:
+    - Structured JSON logs with request IDs
+    - No PII in logs (emails, phones, addresses, SSNs)
+    - Error logs include stack traces in dev only
+
+  network:
+    - HTTPS enforced in staging and production
+    - CORS restricted to known origins
+    - Rate limiting on authentication endpoints
+
+# ─── Compliance Requirements ─────────────────────────────────────────
+
+compliance:
+  data_retention:
+    user_data: 90_days_after_deletion_request
+    logs: 365_days
+    audit_trails: 3_years
+
+  access_control:
+    principle: least_privilege
+    review_frequency: quarterly
+    mfa_required_for:
+      - production_infrastructure
+      - ci_cd_secrets
+      - database_admin
+
+  change_management:
+    - All production changes through CI/CD pipeline
+    - No direct SSH changes without incident justification
+    - Decision docs required for architectural changes
+
+  incident_response:
+    - Ops playbook followed for all incidents
+    - Post-incident summary in docs/decisions/
+    - Root cause analysis within 5 business days
+    - Affected users notified within 24 hours (for standard+)
+
+# ─── Audit Schedule ──────────────────────────────────────────────────
+# Driven by the audit-workflow.md and n8n automation.
+
+audit:
+  quarterly:
+    scope: all apps at standard and critical tiers
+    checks:
+      - security_scan_results_current
+      - dependency_vulnerabilities_resolved
+      - observability_configured
+      - backup_and_recovery_tested
+      - access_permissions_reviewed
+    output: governance/reports/audit-YYYY-QN.md
+
+  semi_annual:
+    scope: all apps at basic tier
+    checks:
+      - security_scan_results_current
+      - dependency_vulnerabilities_resolved
+    output: governance/reports/audit-YYYY-QN.md
+
+  annual:
+    scope: all apps at experimental tier
+    checks:
+      - no_abandoned_resources
+      - secrets_rotated
+    output: governance/reports/audit-YYYY.md

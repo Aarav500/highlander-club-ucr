@@ -1,0 +1,28 @@
+# Labs Config — App Registry
+#
+# This file is a lightweight registry of apps built from the fullstack-template.
+# It is intended as READ-ONLY metadata for agents and humans — do NOT auto-edit
+# without explicit human instruction.
+#
+# Schema per entry:
+#   name            — kebab-case app identifier
+#   repo_url        — GitHub (or other) repo URL
+#   owner           — team or individual responsible
+#   envs            — list of active environments
+#   sla             — service level: experimental | basic | standard | critical
+#   last_deploy     — ISO date of most recent production deploy (null if never deployed)
+#   critical_paths  — list of user-critical flows requiring hardening
+#   tags            — free-form labels for filtering and grouping
+
+apps: []
+
+# Add new apps here as they are spun up from the template.
+# Example:
+#   - name: my-new-app
+#     repo_url: https://github.com/<org>/my-new-app
+#     owner: my-team
+#     envs: [dev, staging, prod]
+#     sla: standard
+#     last_deploy: "2026-03-13"
+#     critical_paths: [signup, payment]
+#     tags: [saas, customer-facing]

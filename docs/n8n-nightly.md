@@ -1,0 +1,151 @@
+# Nightly Lab Operations — n8n Workflow
+
+> Automated nightly health check across all apps built from this template.
+> **Read-only** — scans and summarizes but never commits or deploys.
+
+---
+
+## Trigger
+
+**Schedule Trigger node** — runs every night at a configured time (default: 02:00 UTC).
+
+Configure the cron expression in n8n:
+
+```
+0 2 * * *
+```
+
+---
+
+## Workflow Overview
+
+For each monitored repo (one or more apps cloned from `fullstack-template`):
+
+1. **Check latest status** on the `main` branch.
+2. **Run security scan** against backend and frontend code.
+3. **Run E2E tests** if Playwright tests are available.
+4. **Summarize** CI/build health, findings, and open issues.
+5. **Notify** the team via Slack or email.
+
+---
+
+## Node Map
+
+```
+┌────────────────────┐
+│  Schedule Trigger  │  ← Cron: every night at 02:00 UTC
+└────────┬───────────┘
+         │
+         ▼
+┌────────────────────┐
+│  Loop (for each    │  ← Iterate over configured repo list
+│  monitored repo)   │
+└────────┬───────────┘
+         │
+    ┌────▼────────────────┐
+    │  GitHub Node         │  ← Get latest commit on main,
+    │  (read status)       │     recent workflow runs, open issues
+    └────┬────────────────┘
+         │
+    ┌────▼────────────────┐
+    │  Security Scan       │  ← Run OWASP-based review
+    │  (sub-workflow)      │     (read-only, no code changes)
+    └────┬────────────────┘
+         │
+    ┌────▼────────────────┐
+    │  E2E Tests           │  ← Run Playwright tests if present
+    │  (sub-workflow)      │     (skip if no tests found)
+    └────┬────────────────┘
+         │
+    ┌────▼────────────────┐
+    │  AI Agent Node       │  ← Build a status summary from
+    │  (summarize)         │     all collected data
+    └────┬────────────────┘
+         │
+         ▼
+┌────────────────────┐
+│  Slack / Email     │  ← Post nightly summary
+└────────────────────┘
+```
+
+---
+
+## Node Details
+
+### 1. Schedule Trigger
+
+- **Type:** Schedule Trigger
+- **Config:** Cron expression, default `0 2 * * *` (2 AM UTC nightly).
+
+### 2. Repo Loop
+
+- **Type:** SplitInBatches or Loop
+- **Input:** A static list of repos to monitor (configured as a JSON array in n8n or pulled from a portfolio index).
+- **Example config:**
+  ```json
+  [
+    { "owner": "myorg", "repo": "product-a" },
+    { "owner": "myorg", "repo": "product-b" }
+  ]
+  ```
+
+### 3. GitHub Node (Read Status)
+
+- **Type:** GitHub (action)
+- **Operations:**
+  - Get latest commit on `main` branch (SHA, author, message, date).
+  - List recent workflow runs (last 24h) — extract pass/fail status.
+  - Count open issues and PRs.
+
+### 4. Security Scan (Sub-Workflow)
+
+- **Type:** n8n Sub-Workflow or HTTP Request
+- **Purpose:** Trigger the `security-scan` workflow logic against the repo.
+- **Scope:** Read-only. Scans for SQL injection, XSS, hardcoded secrets, weak CORS, PII in logs (per `security/checklist.md`).
+- **Output:** Finding count by severity (critical, high, medium, info).
+
+### 5. E2E Tests (Sub-Workflow)
+
+- **Type:** n8n Sub-Workflow or HTTP Request
+- **Purpose:** Run Playwright E2E tests if they exist in the repo.
+- **Behavior:** Skip gracefully if no E2E tests are found.
+- **Output:** Test count, pass/fail, and any failure summaries.
+
+### 6. AI Agent Node (Summarize)
+
+- **Type:** AI Agent (OpenAI, Claude, or local model)
+- **Input:** All data from steps 3–5 for the current repo.
+- **Prompt:** "Summarize the nightly health status of this repo. Include: latest commit, CI status, security findings, E2E results, and open issue count. If any action is needed, suggest it clearly."
+- **Output:** A short paragraph per repo.
+
+### 7. Slack / Email Node
+
+- **Type:** Slack (or Email)
+- **Channel:** `#lab-ops` (configurable)
+- **Message format:**
+
+  ```
+  🌙 Nightly Lab Report — 2026-03-12
+
+  ## product-a
+  ✅ Build: passing | 🔒 Security: 0 critical, 1 medium | 🧪 E2E: 12/12 passing
+  Latest: abc1234 — "Add user dashboard" (2h ago)
+  📝 3 open issues, 1 open PR
+
+  ## product-b
+  ❌ Build: failing | 🔒 Security: 1 critical | 🧪 E2E: skipped (no tests)
+  Latest: def5678 — "Update auth middleware" (6h ago)
+  ⚠️ Suggested action: run build-error-resolver for product-b
+  📝 7 open issues, 2 open PRs
+  ```
+
+---
+
+## Interaction with Existing Workflows
+
+| Principle | Details |
+|-----------|---------|
+| **Read-only** | This workflow only reads repo status and runs scans. It never commits, pushes, merges, or deploys. |
+| **Suggest, don't act** | If issues are found, the summary suggests actions (e.g., "run `new-production-app` for issue #123" or "run `build-error-resolver`") but does not execute them. |
+| **Uses existing scans** | Security scan follows the same `security/checklist.md` used by the `security-scan` workflow. E2E tests use the same Playwright suite generated by `e2e-test-gen`. |
+| **No secrets in output** | The summary must never include credentials, tokens, or sensitive config values — only status and finding counts. |
