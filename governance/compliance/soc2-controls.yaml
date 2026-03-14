@@ -1,0 +1,108 @@
+# SOC2 Type II Controls — Trust Services Criteria
+# Reference: AICPA TSP Section 100
+
+controls:
+  # --- Security (Common Criteria) ---
+  - id: CC1.1
+    category: Security
+    title: "COSO Principle 1 — Integrity and Ethics"
+    scan_target: [docs, governance]
+    auto_check: false
+    evidence: "Code of conduct, ethics policy documentation"
+
+  - id: CC6.1
+    category: Security
+    title: "Logical Access Controls"
+    scan_target: [code, infra]
+    auto_check: true
+    checks:
+      - "Auth middleware present on all protected routes"
+      - "RBAC or permission guards implemented"
+      - "Session management with expiry"
+      - "MFA configuration available"
+
+  - id: CC6.2
+    category: Security
+    title: "Credentials Management"
+    scan_target: [code, infra, ci]
+    auto_check: true
+    checks:
+      - "No hardcoded secrets in source code"
+      - "Environment variables for all credentials"
+      - "Secret rotation policy documented"
+      - "Gitleaks or similar scanning in CI"
+
+  - id: CC6.3
+    category: Security
+    title: "Encryption in Transit"
+    scan_target: [infra]
+    auto_check: true
+    checks:
+      - "TLS 1.2+ on all endpoints"
+      - "HSTS headers present"
+      - "Certificate management automated"
+
+  - id: CC7.1
+    category: Security
+    title: "Vulnerability Management"
+    scan_target: [ci, deps]
+    auto_check: true
+    checks:
+      - "Dependency vulnerability scanning in CI"
+      - "Container image scanning"
+      - "SBOM generation"
+
+  - id: CC7.2
+    category: Security
+    title: "Monitoring and Detection"
+    scan_target: [infra, observability]
+    auto_check: true
+    checks:
+      - "Structured logging enabled"
+      - "Error alerting configured"
+      - "Anomaly detection rules"
+
+  - id: CC8.1
+    category: Security
+    title: "Change Management"
+    scan_target: [ci, docs]
+    auto_check: true
+    checks:
+      - "PR-based workflow enforced"
+      - "Code review required before merge"
+      - "CI gates (test, lint, build) before deploy"
+
+  # --- Availability ---
+  - id: A1.1
+    category: Availability
+    title: "Infrastructure Capacity Planning"
+    scan_target: [infra]
+    auto_check: true
+    checks:
+      - "Auto-scaling configured (KEDA or HPA)"
+      - "Resource limits set on containers"
+
+  - id: A1.2
+    category: Availability
+    title: "Disaster Recovery"
+    scan_target: [docs, infra]
+    auto_check: false
+    evidence: "DR plan, backup procedures, RTO/RPO targets"
+
+  # --- Confidentiality ---
+  - id: C1.1
+    category: Confidentiality
+    title: "Data Classification"
+    scan_target: [docs]
+    auto_check: false
+    evidence: "Data classification policy, PII inventory"
+
+  - id: C1.2
+    category: Confidentiality
+    title: "Encryption at Rest"
+    scan_target: [infra, code]
+    auto_check: true
+    checks:
+      - "Database encryption enabled"
+      - "S3 bucket encryption configured"
+      - "Backup encryption verified"

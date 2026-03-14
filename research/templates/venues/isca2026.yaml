@@ -1,0 +1,39 @@
+# ISCA 2026 Venue Configuration
+venue:
+  name: ISCA 2026
+  full_name: "International Symposium on Computer Architecture"
+  year: 2026
+  location: TBD
+
+deadlines:
+  abstract: "2025-11-14T23:59:00-12:00"
+  full_paper: "2025-11-21T23:59:00-12:00"
+  notification: "2026-03-15"
+  camera_ready: "2026-04-15"
+
+format:
+  template: ieeetran
+  document_class: "\\documentclass[conference]{IEEEtran}"
+  style_file: IEEEtran.cls
+  page_limit: 12
+  appendix: 3             # pages
+  columns: 2
+  font_size: 10pt
+  line_spacing: single
+
+submission:
+  platform: HotCRP
+  double_blind: true
+  categories:
+    - cs.AR
+    - cs.DC
+    - cs.PF
+  supplementary_allowed: true
+  code_required: false
+
+checklist:
+  - "Paper is within 12-page limit"
+  - "Author names are anonymized"
+  - "IEEE format compliance verified"
+  - "Artifact evaluation appendix prepared"
+  - "Reproducibility information included"

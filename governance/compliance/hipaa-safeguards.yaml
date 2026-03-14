@@ -1,0 +1,84 @@
+# HIPAA Technical Safeguards — 45 CFR §164.312
+
+safeguards:
+  # --- Access Control (§164.312(a)) ---
+  - id: AC-1
+    section: "164.312(a)(1)"
+    title: "Unique User Identification"
+    scan_target: [code]
+    auto_check: true
+    checks:
+      - "Unique user IDs assigned to each user"
+      - "No shared accounts in application"
+      - "User ID in all audit log entries"
+
+  - id: AC-2
+    section: "164.312(a)(2)(i)"
+    title: "Emergency Access Procedure"
+    scan_target: [docs]
+    auto_check: false
+    evidence: "Break-glass procedure documented"
+
+  - id: AC-3
+    section: "164.312(a)(2)(ii)"
+    title: "Automatic Logoff"
+    scan_target: [code]
+    auto_check: true
+    checks:
+      - "Session timeout configured (≤ 15 min idle)"
+      - "JWT expiry enforced"
+
+  - id: AC-4
+    section: "164.312(a)(2)(iv)"
+    title: "Encryption and Decryption"
+    scan_target: [code, infra]
+    auto_check: true
+    checks:
+      - "PHI encrypted at rest (AES-256)"
+      - "PHI encrypted in transit (TLS 1.2+)"
+      - "Encryption key management documented"
+
+  # --- Audit Controls (§164.312(b)) ---
+  - id: AU-1
+    section: "164.312(b)"
+    title: "Audit Controls"
+    scan_target: [code, infra]
+    auto_check: true
+    checks:
+      - "Access to PHI is logged"
+      - "Audit logs are immutable"
+      - "Log retention ≥ 6 years"
+      - "Logs do not contain raw PHI"
+
+  # --- Integrity Controls (§164.312(c)) ---
+  - id: IN-1
+    section: "164.312(c)(1)"
+    title: "Data Integrity"
+    scan_target: [code]
+    auto_check: true
+    checks:
+      - "Input validation on all PHI fields"
+      - "Database constraints enforce data integrity"
+      - "Checksums or hashes on sensitive data transfers"
+
+  # --- Transmission Security (§164.312(e)) ---
+  - id: TS-1
+    section: "164.312(e)(1)"
+    title: "Transmission Security"
+    scan_target: [infra]
+    auto_check: true
+    checks:
+      - "All API endpoints use HTTPS"
+      - "No mixed content warnings"
+      - "Certificate pinning for mobile apps"
+
+  # --- Person or Entity Authentication (§164.312(d)) ---
+  - id: PA-1
+    section: "164.312(d)"
+    title: "Authentication"
+    scan_target: [code]
+    auto_check: true
+    checks:
+      - "Multi-factor authentication available"
+      - "Password complexity requirements enforced"
+      - "Account lockout after failed attempts"

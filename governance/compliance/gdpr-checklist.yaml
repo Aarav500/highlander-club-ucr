@@ -1,0 +1,85 @@
+# GDPR Compliance — Articles 25 (Data Protection by Design) & 32 (Security)
+
+requirements:
+  # --- Article 25: Data Protection by Design and by Default ---
+  - id: GDPR-25-1
+    article: "25(1)"
+    title: "Data Protection by Design"
+    scan_target: [code, docs]
+    auto_check: true
+    checks:
+      - "Data minimization — only necessary PII collected"
+      - "Purpose limitation — PII used only for stated purpose"
+      - "Privacy by default — strictest privacy settings as default"
+
+  - id: GDPR-25-2
+    article: "25(2)"
+    title: "Data Protection by Default"
+    scan_target: [code]
+    auto_check: true
+    checks:
+      - "Only necessary PII processed by default"
+      - "PII not shared with third parties without consent"
+      - "Data retention periods enforced"
+
+  # --- Article 32: Security of Processing ---
+  - id: GDPR-32-1a
+    article: "32(1)(a)"
+    title: "Pseudonymisation and Encryption"
+    scan_target: [code, infra]
+    auto_check: true
+    checks:
+      - "PII pseudonymised where possible"
+      - "Encryption at rest and in transit"
+
+  - id: GDPR-32-1b
+    article: "32(1)(b)"
+    title: "Confidentiality, Integrity, Availability"
+    scan_target: [infra]
+    auto_check: true
+    checks:
+      - "Access controls enforce confidentiality"
+      - "Integrity checks on data processing"
+      - "High availability configuration"
+
+  - id: GDPR-32-1d
+    article: "32(1)(d)"
+    title: "Testing and Evaluation"
+    scan_target: [ci, docs]
+    auto_check: true
+    checks:
+      - "Regular security testing in CI"
+      - "Penetration testing scheduled"
+      - "Compliance audit processes documented"
+
+  # --- Data Subject Rights ---
+  - id: GDPR-DSR-1
+    article: "15-20"
+    title: "Data Subject Rights Implementation"
+    scan_target: [code]
+    auto_check: true
+    checks:
+      - "Right of access — API to export user data"
+      - "Right to erasure — API to delete user data"
+      - "Right to portability — export in machine-readable format"
+      - "Right to rectification — API to update user data"
+
+  # --- Consent ---
+  - id: GDPR-CONSENT
+    article: "7"
+    title: "Consent Management"
+    scan_target: [code, docs]
+    auto_check: true
+    checks:
+      - "Consent collection with clear opt-in"
+      - "Consent records stored with timestamp"
+      - "Consent withdrawal mechanism available"
+      - "Cookie consent banner implemented"
+
+  # --- Breach Notification ---
+  - id: GDPR-33
+    article: "33"
+    title: "Breach Notification"
+    scan_target: [docs]
+    auto_check: false
+    evidence: "Breach notification procedure (72-hour deadline)"

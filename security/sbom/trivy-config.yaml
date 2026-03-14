@@ -1,0 +1,56 @@
+# Trivy Scanner Configuration
+# See: https://aquasecurity.github.io/trivy/
+
+scan:
+  # Severity levels to report (UNKNOWN, LOW, MEDIUM, HIGH, CRITICAL)
+  severity:
+    - HIGH
+    - CRITICAL
+
+  # What to scan
+  targets:
+    filesystem:
+      paths:
+        - apps/
+        - infra/
+      skip_dirs:
+        - node_modules
+        - .git
+        - .venv
+
+    container:
+      images:
+        - ghcr.io/<org>/<app>:latest
+
+    kubernetes:
+      paths:
+        - infra/k8s/
+
+  # Vulnerability database
+  db:
+    skip_update: false
+    light: false
+
+  # Misconfiguration scanning
+  misconfig:
+    enabled: true
+    include:
+      - kubernetes
+      - docker
+      - terraform
+
+  # Secret scanning
+  secret:
+    enabled: true
+
+# Exit codes
+exit_code:
+  vuln: 1          # Exit 1 if vulnerabilities found
+  misconfig: 1     # Exit 1 if misconfigs found
+  secret: 1        # Exit 1 if secrets found
+
+# Ignore specific CVEs (with justification)
+ignore:
+  # - id: CVE-2024-XXXXX
+  #   reason: "False positive — we don't use the affected code path"
+  #   expires: "2026-06-01"

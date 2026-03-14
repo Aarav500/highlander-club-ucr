@@ -1,0 +1,45 @@
+# NeurIPS 2026 Venue Configuration
+venue:
+  name: NeurIPS 2026
+  full_name: "Conference on Neural Information Processing Systems"
+  year: 2026
+  location: TBD
+
+deadlines:
+  abstract: "2026-05-08T23:59:00-12:00"  # AoE
+  full_paper: "2026-05-15T23:59:00-12:00"
+  supplementary: "2026-05-22T23:59:00-12:00"
+  notification: "2026-09-15"
+  camera_ready: "2026-10-15"
+
+format:
+  template: neurips_2026
+  document_class: "\\documentclass{article}"
+  style_file: neurips_2026.sty
+  page_limit: 9          # excluding references
+  appendix: unlimited
+  columns: 1
+  font_size: 10pt
+  line_spacing: single
+  margins: "1in all sides"
+
+submission:
+  platform: OpenReview
+  url: https://openreview.net/group?id=NeurIPS.cc/2026/Conference
+  double_blind: true
+  categories:
+    - cs.LG
+    - cs.AI
+    - cs.CL
+    - cs.CV
+    - stat.ML
+  supplementary_allowed: true
+  code_required: false
+
+checklist:
+  - "Paper is within 9-page limit (excluding references)"
+  - "Author names are anonymized"
+  - "No identifying information in text, figures, or metadata"
+  - "NeurIPS paper checklist is completed"
+  - "Broader Impact statement included"
+  - "Reproducibility statement included"

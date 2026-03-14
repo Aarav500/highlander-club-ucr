@@ -1,0 +1,40 @@
+# ICML 2026 Venue Configuration
+venue:
+  name: ICML 2026
+  full_name: "International Conference on Machine Learning"
+  year: 2026
+  location: TBD
+
+deadlines:
+  abstract: "2026-01-23T23:59:00-12:00"
+  full_paper: "2026-01-30T23:59:00-12:00"
+  supplementary: "2026-02-06T23:59:00-12:00"
+  notification: "2026-05-01"
+  camera_ready: "2026-06-01"
+
+format:
+  template: icml2026
+  document_class: "\\documentclass[accepted]{icml2026}"
+  style_file: icml2026.sty
+  page_limit: 8           # excluding references and appendix
+  appendix: unlimited
+  columns: 2
+  font_size: 10pt
+  line_spacing: single
+
+submission:
+  platform: OpenReview
+  url: https://openreview.net/group?id=ICML.cc/2026/Conference
+  double_blind: true
+  categories:
+    - cs.LG
+    - cs.AI
+    - stat.ML
+  supplementary_allowed: true
+  code_required: false
+
+checklist:
+  - "Paper is within 8-page limit (excluding references and appendix)"
+  - "Author names are anonymized"
+  - "ICML reproducibility checklist completed"
+  - "Ethics statement included if applicable"

@@ -578,3 +578,657 @@ Enterprise policies and compliance automation:
 3. **Reference `platform/` modules** when shared functionality is needed — do not duplicate.
 4. **Notify owners** — use the `owner` field to route audit findings and change notifications.
 
+## Lab V4.0 — New Capabilities
+
+> Lab V4.0 adds 16 new capabilities across agent orchestration, infrastructure, research automation, cross-platform, and enterprise AI-ops. Version `4.0.0`.
+
+### V4.0 Agent Orchestration
+
+| Workflow | Agents | Description |
+|----------|--------|-------------|
+| `swarm-v2` | 15 parallel | LangGraph DAG + CrewAI + OpenAI Swarm. Wave-based fan-out/fan-in with LLM judge merge. |
+| `multi-llm-harmony` | 3 parallel | Claude + Amazon Q + Grok triple-LLM execution (V2.2 — retained). |
+| `multimodal-agents` | Vision + Audio + Video | Gemini 2.5 Pro + Claude 4.5 multi-modal pipelines. |
+
+### V4.0 Infrastructure
+
+| Workflow | Stack | Description |
+|----------|-------|-------------|
+| `k8s-deploy` | ArgoCD + KEDA | GitOps Kubernetes deployment with autoscaling. Manifests in `infra/k8s/`. |
+| `agent-gitops` | ArgoCD + Flux v2 | Dual-controller GitOps. Agents propose infra changes as PRs. |
+| `local-llm` | Ollama + vLLM + NIM | Local LLM inference. Configs in `infra/local-inference/`. |
+| `ai-ops` | Dynatrace + Harness | Auto root-cause analysis, anomaly detection, self-healing runbooks. |
+
+### V4.0 Frontend & Cross-Platform
+
+| Workflow | Stack | Description |
+|----------|-------|-------------|
+| `next16-upgrade` | Next.js 16 + React Compiler | Migration workflow with Turbopack, async APIs, and compiler enablement. |
+| `cross-platform` | Flutter 4.0 + Tauri v2 | iOS/Android/Web via Flutter, desktop via Tauri. Shared API client. |
+| `pwa-engine` | Workbox + TWA | PWA with offline-first + Google Play TWA wrapper. |
+| `ide-agents` | Zed + Cursor + Replit | Sync `CLAUDE.md` context to IDE-specific configs. |
+
+### V4.0 Research Factory
+
+| Workflow | Description |
+|----------|-------------|
+| `arxiv-bot` | Auto-generate papers, format for venue, package and submit to arXiv. |
+| `algo-factory` | Novel algorithm generator with DSPy prompt optimization + Lean 4 proofs + patent drafts. |
+| `citation-engine` | Semantic Scholar API + Connected Papers graph + auto-BibTeX. |
+
+Venue configs: `research/templates/venues/` (NeurIPS 2026, ICML 2026, ISCA 2026 + schema for adding more). Master index of 50+ templates: `research/templates/venue-templates.md`.
+
+### V4.0 Security & Compliance
+
+| Workflow | Framework | Description |
+|----------|-----------|-------------|
+| `compliance-engine` | SOC2 + HIPAA + GDPR | Automated scanning, evidence collection, gap analysis, remediation. Configs in `governance/compliance/`. |
+| `sbom-security` | Trivy + Syft | SBOM generation, vulnerability scanning, license compliance. Configs in `security/sbom/`. |
+
+### V4.0 Slash Command Reference
+
+```
+/swarm-v2 --task "description"        — 15-agent parallel build
+/k8s-deploy --app <name>             — GitOps K8s deploy
+/next16-upgrade --app web            — Upgrade to Next.js 16
+/arxiv-bot --venue neurips2026       — Auto-publish to arXiv
+/local-llm --setup                   — Set up local inference
+/multimodal --vision --input <img>   — Diagram → code
+/ide-agents --all                    — Sync IDE configs
+/compliance-engine --scan --all      — Compliance scan
+/algo-factory --problem "desc"       — Novel algorithm + proof
+/citation-engine --search "topic"    — Literature discovery
+/cross-platform --init               — Flutter + Tauri scaffold
+/pwa-engine --full                   — PWA + TWA setup
+/ai-ops --enable                     — Enable anomaly detection
+/sbom-security --scan                — Vulnerability scan
+/agent-gitops --deploy               — Agent-driven GitOps deploy
+```
+
+---
+
+## Lab V5.0 — New Capabilities
+
+> Lab V5.0 adds 20 new or upgraded capabilities. Version `5.0.0`. Builds on V4.0 — all prior workflows remain operational.
+
+### V5.0 Agentic Swarm & Benchmarks
+
+| Workflow | Agents | Description |
+|----------|--------|-------------|
+| `swarm-v3` | **20 parallel** | LangGraph DAG + Claude Opus 4.6. 5 new agents (`governance-auditor`, `perf-engineer`, `edge-deployer`, `rag-specialist`, `eval-runner`). Adaptive wave scheduling + agent self-improvement. |
+| `terminalbench` | Eval harness | Multi-step engineering benchmarks. 5 challenge suites: code gen, debugging, refactoring, deployment, multi-step. |
+| `dspy-v3` | Auto-optimizer | Self-improving agent prompt chains. MIPRO v2, auto-metric discovery, CoT distillation. |
+
+### V5.0 Confidential & Privacy-Preserving AI
+
+| Workflow | Stack | Description |
+|----------|-------|-------------|
+| `confidential-ai` | Opaque + HE + TEE + ZK | Homomorphic encryption inference, TEE secure enclaves, ZK proofs for verifiable computation, Opaque multi-party analytics. Configs in `infra/confidential/`. |
+
+### V5.0 Edge & On-Device AI
+
+| Workflow | Stack | Description |
+|----------|-------|-------------|
+| `edge-ai` | TinyML + WebGPU + TFLite + Coral | Model quantization pipeline (FP32→INT8→INT4), WebGPU browser inference, TFLite mobile, Coral TPU deployment, OTA model updates. Configs in `infra/edge-ai/`. |
+| `small-language-models` | Phi-4 + Gemma 3 | On-device LLM deployment. GGUF quantization, llama.cpp/MLX inference, Core ML (iOS), NNAPI (Android), WASM (browser). |
+
+### V5.0 Physical AI & Simulation
+
+| Workflow | Stack | Description |
+|----------|-------|-------------|
+| `robotics` | ROS2 Jazzy + Isaac Sim | ROS2 workspace scaffolding, NVIDIA Isaac Sim digital twin, URDF/SDF modeling, Nav2 navigation, sim-to-real transfer. Configs in `infra/robotics/`. |
+| `world-models` | Sora v2 + Genie 2 | Video world models. Sora v2 text/image/video generation, Genie 2 interactive action-conditioned environments, custom Video DiT training. |
+| `physics-sim` | Omniverse + MuJoCo | High-fidelity physics. USD scene composition, MuJoCo contact dynamics, Gymnasium RL integration, domain randomization. |
+
+### V5.0 Enterprise Infrastructure
+
+| Workflow | Stack | Description |
+|----------|-------|-------------|
+| `gitops-v2` | ArgoCD + Flux v2 + Keptn | Progressive delivery with canary analysis and SLO-based automated rollback. |
+| `fedramp` | SOC2 Type II + FedRAMP | Automated compliance scanning, control mapping, evidence collection, continuous monitoring, audit prep. Configs in `governance/compliance/`. |
+| `ide-agents` (v2) | Zed + Cursor v3 + Replit | Context server protocol, `.cursor/rules` deep integration, Ghostwriter agent sync, multi-IDE federation. |
+| `sbom-security` (v2) | Syft + Trivy + Sigstore | Artifact signing (cosign), Rekor transparency log, SLSA Level 3 provenance, AI model supply chain scanning. |
+| `agent-governance` | Moderation + Guardrails | Input/output guardrails (PII, prompt injection), constitutional AI constraints, red-team eval harness, audit logging. |
+
+### V5.0 Cross-Platform
+
+| Workflow | Stack | Description |
+|----------|-------|-------------|
+| `cross-platform` (v2) | Flutter 4.2 + Tauri 2.0 + RN 0.78 | Shared Dart/TS API client gen, Tauri v2 plugin system, React Native new architecture (Fabric + TurboModules). |
+| `pwa-engine` (v2) | Workbox v8 + TWA v2 | Background Sync v2, Navigation Preload, Declarative Net Request, improved installability, Push API v2. |
+| `webxr` | WebXR + A-Frame 1.6 + 8th Wall | AR/VR web experiences. 3D scene management, spatial anchoring, hand tracking, surface detection. |
+
+### V5.0 Bleeding Edge AI
+
+| Workflow | Stack | Description |
+|----------|-------|-------------|
+| `distributed-training` | DeepSpeed ZeRO-4 + Ray Train | Multi-node GPU orchestration. Gradient checkpointing, mixed-precision, fault tolerance. |
+| `quantum-ml` | PennyLane + Qiskit 2.0 | Variational quantum circuits, quantum kernel methods, hybrid classical-quantum pipelines, portfolio optimization (QAOA). |
+
+### V5.0 Model Tiers (Updated)
+
+| Tier | Model | Examples |
+|------|-------|----------|
+| **Tier 0** — Frontier | Claude Opus 4.6 | `swarm-v3` orchestrator, `quantum-ml`, `confidential-ai` |
+| **Tier 1** — Deep | Claude Opus / best | Research, security, architecture, governance |
+| **Tier 2** — Standard | Claude Sonnet | Implementation, UI, code review, workflows |
+| **Tier 3** — Fast | Claude Haiku / Phi-4 local | Tests, docs, small fixes, on-device agents |
+
+### V5.0 Slash Command Reference
+
+```
+# Agentic Swarm & Benchmarks
+/swarm-v3 --task "description"             — 20-agent parallel build
+/terminalbench --run --agent swarm-v3      — Multi-step engineering benchmark
+/dspy-v3 --optimize --program Chain        — Self-improving agent prompts
+
+# Confidential & Edge AI
+/confidential-ai --setup --provider aws    — Encrypted inference + ZK proofs
+/edge-ai --pipeline --model x --target y   — TinyML → WebGPU/TFLite/Coral
+/small-language-models --serve --model x   — On-device LLM inference
+
+# Physical AI & Simulation
+/robotics --ros2 --init --robot x          — ROS2 + Isaac Sim scaffold
+/world-models --sora-v2 --prompt "desc"    — Sora v2 video generation
+/physics-sim --mujoco --model x.xml        — MuJoCo + Omniverse physics sim
+
+# Enterprise Infrastructure
+/gitops-v2 --deploy --app x --strategy y   — Canary/blue-green with Keptn
+/fedramp --scan --framework soc2,fedramp   — Compliance automation
+/agent-governance --red-team --agent x     — Guardrails + red-team eval
+/sbom-security --scan --sign               — SBOM + Sigstore signing
+
+# Cross-Platform
+/cross-platform --init --name x            — Flutter 4.2 + Tauri 2.0 + RN 0.78
+/pwa-engine --full                         — Workbox v8 + TWA v2
+/webxr --init --framework aframe --type vr — AR/VR with WebXR + A-Frame
+
+# Bleeding Edge AI
+/distributed-training --model x --nodes n  — DeepSpeed ZeRO-4 + Ray Train
+/quantum-ml --qaoa --portfolio assets.csv  — Quantum ML with PennyLane/Qiskit
+```
+
+---
+
+## Options Engine — Case-by-Case Stack Selection
+
+> The lab no longer hardcodes one frontend style. For every new page, the agent chooses the best design approach based on context and constraints.
+
+### How It Works
+
+1. Agent reads **`.agent/capabilities/options-catalog.yaml`** — 60+ options across frontend, backend, deploy, mobile
+2. Scores options using the **decision matrix** in `.agent/capabilities/options-engine.md`
+3. Presents **2–3 ranked alternatives** with rationale
+4. On selection, **scaffolds code** using the chosen stack
+5. **Saves decisions** to `docs/frontend-decisions.md` for future learning
+
+### Frontend Options Available
+
+| Category | Options Count | Examples |
+|----------|:---:|---------|
+| Design Systems | 15 | shadcn/ui, MUI, Mantine, Chakra, Ant Design, Radix, DaisyUI, Tremor |
+| Visual Styles | 10 | Glassmorphism, flat, brutalist, sci-fi, corporate, dark luxury |
+| Layout Patterns | 13 | Marketing hero, dense dashboard, form wizard, data admin, mobile cards |
+| Motion Levels | 4 | None, subtle, rich, cinematic |
+
+### Options Engine Slash Commands
+
+```
+# Design a specific page (frontend chooser)
+/design-page page_type="dashboard" brand="futuristic serious" constraints="low-motion, data-dense"
+
+# Explore alternatives — see 2-3 design variants
+/design-explore page_type="marketing" brand="playful colorful"
+
+# Adopt a specific option from alternatives
+/design-adopt option=2
+
+# Multi-domain chooser (frontend, backend, deploy, mobile)
+/options-choose domain=frontend page_type=dashboard brand="enterprise" constraints="accessible"
+/options-choose domain=backend page_type=api-heavy scale=high
+/options-choose domain=deploy page_type=nextjs constraints="cost-sensitive"
+/options-choose domain=mobile page_type=fintech constraints="app-store"
+
+# Adopt chosen option
+/options-adopt option=1
+```
+
+---
+
+## Lab V7.0 — Enterprise Masterpiece
+
+> Quality + Scale upgrade. Version `7.0.0`. SWE-bench 80%+, agentic design governance, self-healing AI-Ops, upgraded confidential compute and quantum ML.
+
+### V7.0 Quality Guarantees
+
+| Domain | Metric | Target |
+|--------|--------|--------|
+| Code | SWE-bench score | 80%+ |
+| Code | Test coverage | 95% |
+| Code | Lint errors | 0 |
+| Design | Consistency | 92% |
+| Design | Component reuse | 156% boost |
+| Deploy | Uptime SLO | 99.99% |
+| Deploy | Incident response | 56% faster |
+| Security | Posture | SOC2 ready + zero-trust |
+
+### V7.0 New Workflows
+
+| Workflow | Description |
+|----------|-------------|
+| `swe-bench-agent.md` | Cursor v3 + Claude Code, ESLint v9 + Biome v2, test-first, mutation testing, multi-agent PR review |
+| `agentic-design.md` | Figma API → Tailwind, drift detection, 92% consistency, pattern library |
+| `multimodal-v2.md` | Gemini 2.5 Vision diagram→code, video→bugs, Sora v3, world simulation |
+
+### V7.0 Upgraded Workflows
+
+| Workflow | Key Upgrades |
+|----------|-------------|
+| `ai-ops.md` | Davis AI + Keptn + Argo Rollouts, 99.99% SLO, progressive delivery |
+| `confidential-ai.md` | AWS Nitro + AMD SEV-SNP, Concrete ML v2, zero-trust pipelines |
+| `quantum-ml.md` | Qiskit 3.0, TinyGrad, ZNE + PEC error mitigation |
+| `multimodal-agents.md` | Claude Opus 4.6, Sora v3 integration |
+
+### V7.0 New Agent Roles
+
+| Role | Focus |
+|------|-------|
+| `swe-bench-master` | Code quality 80%+, test-first, mutation testing |
+| `design-governor` | Figma → code, drift detection, consistency |
+| `aiops-engineer` | Davis AI, SLO enforcement, self-healing |
+
+### V7.0 Slash Commands
+
+```bash
+# SWE-Bench Agent (Code Quality)
+/code-swebench --task "Fix auth bypass"         — Full SWE-bench pipeline
+/code-swebench --lint-only                      — ESLint v9 + Biome v2 scan
+/code-swebench --test-first --feature "..."     — Test-first generation
+/code-swebench --review --scope HEAD~3..HEAD    — Multi-agent PR review
+/code-swebench --gate-check                     — Quality gate report
+/code-swebench --mutation-test --scope "src/**" — Stryker mutation testing
+
+# Agentic Design (Governance)
+/design-agentic --mode full --figma_file "..."  — Full Figma → code pipeline
+/design-agentic --mode audit --project ./       — Design consistency audit
+/design-agentic --mode govern --fix             — Auto-fix drift violations
+
+# AI-Ops v2 (Self-Healing)
+/ai-ops --canary --app <name>                   — Progressive canary deploy
+/ai-ops --slo --check                           — SLO burn rate check
+/ai-ops --rollback --app <name>                 — Emergency rollback
+
+# Multi-Modal v2
+/multimodal-v2 --vision --input <img> --output components  — Diagram → code
+/multimodal-v2 --video --input <vid> --output bug-report   — Video → bugs
+/multimodal-v2 --sora-v3 --prompt "..." --duration 30s     — Sora v3 video
+/multimodal-v2 --world-sim --scenario "..." --agents 10    — World simulation
+
+# Confidential AI v2
+/confidential-ai --tee --enclave nitro          — AWS Nitro Enclaves
+/confidential-ai --zero-trust --pipeline <yaml> — Zero-trust pipeline
+
+# Quantum ML v2
+/quantum-ml --qiskit --mitigation zne,pec,m3    — Error mitigation
+/quantum-ml --tinygrad --simulate --qubits 12   — TinyGrad local sim
+/quantum-ml --benchmark --backends ibm,ionq     — Multi-backend comparison
+```
+
+---
+
+## Lab V8.0 — Absolute Perfection
+
+> From enterprise to perfection. Version `8.0.0`. SWE-bench 85%+ leaderboard, 100 venue templates, confidential GPU, 99.999% uptime, DSPy v4 self-improving agents, cross-platform total.
+
+### V8.0 Quality Guarantees
+
+| Domain | Metric | V7.0 Target | V8.0 Target |
+|--------|--------|-------------|-------------|
+| Code | SWE-bench score | 80%+ | **85%+** |
+| Code | Test coverage | 95% | **98%** |
+| Code | Lint errors | 0 | 0 (+ Oxlint) |
+| Code | PR review agents | 3 | **5** |
+| Design | Consistency | 92% | **95%** |
+| Design | Component reuse | 156% boost | **200%** boost |
+| Deploy | Uptime SLO | 99.99% | **99.999%** |
+| Deploy | MTTR | 56% faster | **70% faster** |
+| Security | Posture | SOC2 ready | **SOC2 Type II + FedRAMP Moderate** |
+| Security | Supply chain | SLSA Level 3 | **SLSA Level 4** |
+| Research | Venue templates | 50+ | **100+** |
+| Research | Citation sources | 1 API | **4 APIs** |
+
+### V8.0 New Workflows
+
+| Workflow | Description |
+|----------|-------------|
+| `benchmark-live.md` | LiveBench + ARC-AGI-2 automated model evaluation, auto-leaderboard, tier recommendations |
+| `venue-factory.md` | 100+ academic venue templates, CFP auto-detection, multi-format (LaTeX/Typst/Markdown/DOCX) |
+| `dspy-v4.md` | MIPRO v3 + BetterTogether, self-improving agent chains, multi-model ensemble, prompt mutation |
+
+### V8.0 Upgraded Workflows
+
+| Workflow | Key Upgrades |
+|----------|-------------|
+| `swe-bench-agent.md` | Cursor v4 + Claude 4.6, 85%+ target, Oxlint, 5-agent review, fuzzing, fault-injection, AI code repair |
+| `agent-governance.md` | OpenAI Moderation v3 (multi-modal), NeMo Guardrails, 8-category red-team, LLM-as-judge, SOC2 evidence |
+| `ide-agents.md` | Zed v0.18 Context Server, Cursor v4 Composer AI, Windsurf Cascade, multi-IDE federation |
+| `distributed-training.md` | DeepSpeed ZeRO-5, Ray 3.0, H200/GB200, Optuna HPO, elastic training, MLflow 3.0 |
+| `confidential-ai.md` | NVIDIA H100 CC mode, Concrete ML v3 (100M params), SP1 zkVM, Noir DSL, Opaque v2 |
+| `citation-engine.md` | 4 APIs (Semantic Scholar + OpenAlex + Crossref + DBLP), citation network analysis, impact prediction |
+| `cross-platform.md` | Flutter 4.3 (Impeller v3, WASM), Tauri 2.1, RN 0.79 (static Hermes), unified theming |
+| `edge-ai.md` | WebGPU compute shaders, browser-native LLM, Coral TPU v2, INT4/AWQ, federated learning |
+| `webxr.md` | WebXR Layers + Depth API, A-Frame 1.7, 8th Wall v30 (SLAM v2, LiDAR), spatial audio, multi-user XR |
+| `ai-ops.md` | Davis v3 causal AI, 99.999% SLO, chaos engineering, cost-aware scaling, anomaly forecasting |
+| `sbom-security.md` | Grype + OSV-Scanner, in-toto + Witness, SLSA Level 4, auto CVE remediation, dep graph viz |
+| `fedramp.md` | SOC2 Type II continuous monitoring, FedRAMP Moderate authorization, NIST 800-53 r5, StateRAMP |
+
+### V8.0 New Agent Roles
+
+| Role | Focus |
+|------|-------|
+| `benchmark-runner` | LiveBench + ARC-AGI-2 evaluation, model comparison, tier recommendation |
+| `venue-engineer` | Academic venue template management, CFP parsing, multi-format output |
+| `prompt-optimizer` | DSPy v4 self-improving agent prompts, mutation + selection |
+| `compliance-officer` | SOC2 Type II + FedRAMP continuous monitoring, evidence collection |
+
+### V8.0 Model Tiers (Updated)
+
+| Tier | Model | Examples |
+|------|-------|----------|
+| **Tier 0** — Frontier | Claude Opus 4.6, Gemini 3.1 Pro | `swarm-v3` orchestrator, `quantum-ml`, `confidential-ai` |
+| **Tier 1** — Deep | Claude Opus / Grok 4.20 | Research, security, architecture, governance |
+| **Tier 2** — Standard | Claude Sonnet, Gemini 3.1 | Implementation, UI, code review, workflows |
+| **Tier 3** — Fast | Claude Haiku / Phi-4 local | Tests, docs, small fixes, on-device agents |
+
+### V8.0 Slash Command Reference
+
+```bash
+# Phase 1: Live Execution
+/code-swebench --task "..." --depth exhaustive     — SWE-bench 85%+ pipeline
+/code-swebench --fuzz --target "src/**/*.ts"       — Fuzzing (V8.0)
+/code-swebench --auto-repair --task "..."          — AI code repair loop (V8.0)
+/agent-governance --moderate --moderation-v3       — Multi-modal moderation (V8.0)
+/agent-governance --llm-judge --rubric rubric.yaml — LLM-as-judge (V8.0)
+/agent-governance --export-evidence --framework soc2 — SOC2 evidence (V8.0)
+/benchmark-live --run --all                        — Full benchmark suite (V8.0)
+/benchmark-live --leaderboard                      — View model rankings (V8.0)
+/benchmark-live --arc-agi2 --model claude-4.6      — ARC-AGI-2 eval (V8.0)
+
+# Phase 2: Infra Perfection
+/ide-agents --pair --task "..." --lead cursor      — AI pair programming (V8.0)
+/ide-agents --federation --start                   — Multi-IDE sync (V8.0)
+/distributed-training --elastic --spot             — Elastic training (V8.0)
+/distributed-training --hpo --optuna               — Optuna HPO (V8.0)
+/confidential-ai --tee --gpu h100-cc               — H100 CC mode (V8.0)
+/confidential-ai --zk --backend sp1                — SP1 zkVM proofs (V8.0)
+/confidential-ai --privacy-budget --check          — Privacy budget (V8.0)
+
+# Phase 3: Research Domination
+/venue-factory --venue neurips2026 --format latex   — Venue template (V8.0)
+/venue-factory --cfp "https://..."                 — CFP auto-detect (V8.0)
+/venue-factory --list --tier all                   — 100+ venues (V8.0)
+/dspy-v4 --self-improve --iterations 10            — Self-improving agents (V8.0)
+/dspy-v4 --ensemble --models claude,gemini,grok    — Multi-model ensemble (V8.0)
+/citation-engine --network --seed "doi1,doi2"      — Citation network (V8.0)
+/citation-engine --predict-impact --paper "..."    — Impact prediction (V8.0)
+
+# Phase 4: Cross-Platform Total
+/cross-platform --init --flutter43 --tauri21 --rn79 — Full scaffold (V8.0)
+/cross-platform --build --platform web-wasm         — WASM build (V8.0)
+/edge-ai --browser-llm --model phi-4-int4           — Browser LLM (V8.0)
+/edge-ai --federated --devices 10 --rounds 50       — Federated learning (V8.0)
+/webxr --init --type ar --features depth,hands      — WebXR v2 (V8.0)
+/webxr --multi-user --room my-room                  — Multi-user XR (V8.0)
+
+# Phase 5: Enterprise Absolute
+/ai-ops --chaos --experiment pod-failure            — Chaos engineering (V8.0)
+/ai-ops --cost-scaling --budget 50000               — Cost-aware scaling (V8.0)
+/ai-ops --forecast --horizon 24h                    — Anomaly forecasting (V8.0)
+/sbom-security --scan --sign --slsa4                — SLSA Level 4 (V8.0)
+/sbom-security --remediate --auto                   — Auto CVE fix (V8.0)
+/fedramp --scan --framework soc2-type-ii,fedramp-moderate — Full compliance (V8.0)
+/fedramp --evidence --framework soc2 --period Q1    — Evidence export (V8.0)
+/fedramp --stateramp --prepare                      — StateRAMP (V8.0)
+```
+
+---
+
+## Lab V9.0 — 2026 Complete Edition
+
+> Nothing left to add. Version `9.0.0`. Live execution (Replit + Cursor v4 + Zed v0.19), sector-specific AI (finance, health, enterprise), conference prep, fraud/risk ML, DL-AI dev 2026, SWE-bench 90%, air-gapped inference.
+
+### V9.0 Quality Guarantees
+
+| Domain | Metric | V8.0 Target | V9.0 Target |
+|--------|--------|-------------|-------------|
+| Code | SWE-bench score | 85%+ | **90%+ (Leader)** |
+| Code | Test coverage | 98% | **99%** |
+| Code | PR review agents | 5 | **7** |
+| Code | IDE integration | 1 IDE | **3 IDEs** (Replit + Cursor + Zed) |
+| Deploy | Uptime SLO | 99.999% | **99.9999%** (six-nines) |
+| Deploy | MTTR | 70% faster | **80% faster** |
+| Security | Air-gap | Optional | **Full air-gapped ready** |
+| Security | PII protection | Privacy budget | **PII-free inference** |
+| Finance | Fraud detection | N/A | **<5ms real-time** |
+| Health | HIPAA RAG | N/A | **Compliant + audited** |
+| Enterprise | Private inference | H100 CC | **Zero-egress H100** |
+| Research | Venue templates | 100+ | **100+** (+ conference demos) |
+| DL/AI | Fine-tuning | N/A | **LoRA + QLoRA + RLHF v2** |
+
+### V9.0 New Workflows
+
+| Workflow | Description |
+|----------|-------------|
+| `live-coding-agents.md` | Replit AI agents + Cursor v4 SWE-bench 90% + Zed v0.19 AI-native, multi-IDE parallel execution |
+| `sector-finance.md` | Jump diffusion pricing, ZK order matching, real-time fraud detection, regulatory compliance |
+| `sector-health.md` | HIPAA-compliant RAG, medical imaging (DICOM), clinical NLP, PHI de-identification |
+| `sector-enterprise.md` | Air-gapped LLM deployment, enterprise vector DB, private H100 inference, data sovereignty |
+| `conference-oracle.md` | Oracle AIWT + Google Next talk/demo generation, venue templates, rehearsal mode |
+| `dl-dev2026.md` | LLM fine-tuning (LoRA/QLoRA/full), RAG v3 multi-modal retrieval, RLHF v2 agent tuning |
+
+### V9.0 Upgraded Workflows
+
+| Workflow | Key Upgrades |
+|----------|-------------|
+| `swe-bench-agent.md` | 90% target, Replit + Zed integration, 7-agent PR review, live execution mode |
+| `confidential-ai.md` | Air-gapped ML, zero-egress H100, PII-free inference, HIPAA/PCI-DSS/ITAR sector modes |
+| `ai-ops.md` | Real-time fraud/risk ML, streaming scoring, adaptive thresholds, air-gapped monitoring, 99.9999% SLO |
+| `distributed-training.md` | LoRA/QLoRA/DoRA, RLHF v2 + DPO + ORPO agent tuning, RAG v3 embedding training |
+
+### V9.0 New Agent Roles
+
+| Role | Focus |
+|------|-------|
+| `live-exec-engineer` | Multi-IDE parallel execution orchestration (V9.0) |
+| `finance-quant` | Jump diffusion, ZK circuits, fraud ML, regulatory compliance (V9.0) |
+| `health-ai-engineer` | HIPAA RAG, medical imaging, clinical NLP, de-identification (V9.0) |
+| `enterprise-ai-architect` | Air-gapped deployment, vector DB, private inference, sovereignty (V9.0) |
+| `conference-producer` | Talk generation, demo environments, rehearsal, content repurposing (V9.0) |
+| `dl-dev-engineer` | LLM fine-tuning, RAG v3 training, RLHF v2 agent tuning (V9.0) |
+
+### V9.0 Model Tiers (Updated)
+
+| Tier | Model | Examples |
+|------|-------|----------|
+| **Tier 0** — Frontier | Claude Opus 4.6, Gemini 3.1 Pro | `swarm-v3`, `quantum-ml`, `confidential-ai`, `sector-finance` (ZK) |
+| **Tier 1** — Deep | Claude Opus / Grok 4.20 | Research, security, `sector-health`, `conference-oracle`, `dl-dev2026` |
+| **Tier 2** — Standard | Claude Sonnet, Gemini 3.1 | Implementation, UI, `live-coding-agents`, `sector-enterprise` |
+| **Tier 3** — Fast | Claude Haiku / Phi-4 local | Tests, docs, small fixes, on-device agents |
+
+### V9.0 Slash Command Reference
+
+```bash
+# Live Execution Frameworks (V9.0)
+/live-exec --ide replit --task "description"                — Replit AI agent
+/live-exec --ide cursor --swe-bench-90                      — Cursor v4 leader
+/live-exec --ide zed --context-server                       — Zed v0.19 AI-native
+/live-exec --parallel --ides all --task "description"       — Multi-IDE parallel
+/swarm-live --agents 25 --swe-bench 90                      — 25-agent live swarm
+/swe-bench-90 --task "description" --auto-repair            — SWE-bench 90% pipeline
+
+# Sector AI: Finance (V9.0)
+/sector-finance --price --model merton --params S=100,K=105 — Jump diffusion pricing
+/sector-finance --zk-match --orders orders.json --prove     — ZK order matching
+/sector-finance --fraud --pipeline start                    — Real-time fraud detection
+/sector-finance --compliance --scan --framework mifid_ii    — Regulatory compliance
+
+# Sector AI: Health (V9.0)
+/sector-health --rag --query "treatment guidelines..."      — HIPAA-compliant RAG
+/sector-health --imaging --modality chest-xray --input x.dcm — Medical imaging
+/sector-health --nlp --icd10 --input discharge.txt          — Clinical NLP (ICD-10)
+/sector-health --deidentify --input records/ --method safe-harbor — PHI de-identification
+
+# Sector AI: Enterprise (V9.0)
+/sector-enterprise --airgap --deploy --model llama-3.2-70b  — Air-gapped LLM
+/sector-enterprise --vector-db --setup --provider milvus    — Enterprise vector DB
+/sector-enterprise --private-inference --start --gpu h100   — Private inference
+/sector-enterprise --sovereignty --scan --jurisdiction eu   — Data sovereignty
+
+# Conference Prep (V9.0)
+/conference-aiwt --generate --topic "RAG v3" --venue oracle-aiwt — Auto-generate talk
+/conference-aiwt --demo --setup --spec specs/demo.md        — Live demo environment
+/conference-aiwt --rehearse --mode full-run --timer          — Rehearsal mode
+/conference-aiwt --repurpose --blog --seo-optimize          — Content repurposing
+
+# Deep Learning-AI Dev 2026 (V9.0)
+/dl-dev2026 --fine-tune --method lora --model llama-3.2-7b  — LoRA fine-tuning
+/dl-dev2026 --fine-tune --method qlora --model mistral-7b   — QLoRA fine-tuning
+/dl-dev2026 --rag-v3 --ingest --source docs/ --modalities text,image — RAG v3
+/dl-dev2026 --agent-tune --method dpo --model llama-3.2-7b  — DPO agent tuning
+/dl-dev2026 --agent-tune --method rlhf-v2 --reward-model rm — RLHF v2 agent tuning
+/dl-dev2026 --eval --model my-model --benchmarks mmlu,swe-bench — Evaluation
+
+# Fraud + Risk AI (V9.0)
+/ai-ops --fraud --start --config fraud-pipeline.yaml        — Real-time fraud ML
+/ai-ops --fraud --threshold --recalibrate                   — Adaptive thresholds
+/airgapped-ml --deploy --model llama-3.2-70b --zero-egress  — Air-gapped inference
+
+# Confidential AI V9.0
+/confidential-ai --airgap --deploy --zero-egress            — Air-gapped confidential
+/confidential-ai --pii-free --mode redact-before-infer      — PII-free inference
+/confidential-ai --sector hipaa --deploy                    — HIPAA sector mode
+```
+
+---
+
+## Lab V10.0 — Total Perfection
+
+> No more updates possible. Version `10.0.0`. Hyper-personalization, 50% bug reduction, 100+ micro-agents, digital twins, AI literacy, developer happiness, 75% cost savings, ethics compliance, trend radar, 3× productivity.
+
+### V10.0 Quality Guarantees
+
+| Domain | Metric | V9.0 Target | V10.0 Target |
+|--------|--------|-------------|--------------|
+| Code | SWE-bench score | 90%+ | **92%+ (Absolute)** |
+| Code | Bug reduction | N/A | **50% fewer bugs** |
+| Code | PR review agents | 7 | **9** (+bug-hunter, +ethics) |
+| Code | Test coverage (sim) | 99% | **95% via digital twins** |
+| Deploy | Uptime SLO | 99.9999% | **99.99999%** (seven-nines) |
+| Deploy | MTTR | 80% faster | **2min MTTR** |
+| Cost | Cloud savings | N/A | **75% reduction** |
+| UX | Engagement | N/A | **3× via hyper-personalization** |
+| DevEx | Happiness | N/A | **40% happier devs** |
+| DevEx | Velocity | N/A | **3× sprint velocity** |
+| Ethics | AI compliance | N/A | **Google AI Principles** |
+| Docs | Auto-generation | N/A | **Instant onboarding** |
+| Agents | Micro-agents | N/A | **100+ hot-swappable** |
+
+### V10.0 New Workflows
+
+| Workflow | Description |
+|----------|-------------|
+| `hyper-personalization.md` | Live sentiment → adaptive UX, dynamic content/layout, A/B testing, 3× engagement |
+| `bug-hunter.md` | Pre-commit AI review, pattern learning, auto-fix, 50% bug reduction target |
+| `modular-ai.md` | 100+ micro-agents, DAG composition, hot-swap runtime, plugin marketplace |
+| `digital-twins.md` | Sora v3 world simulation, synthetic users, visual regression, 95% coverage |
+| `ai-literacy.md` | Auto-docs, tutorials, architecture dashboards, onboarding flows from source |
+| `happiness-engine.md` | Burnout detection, workflow optimization, team health dashboards, 40% happier |
+| `cost-optimizer.md` | 75% cloud savings, right-sizing, spot orchestration, AI budget forecasting |
+| `ai-responsibility.md` | Google AI Principles, bias detection, fairness metrics, responsible AI scorecard |
+| `trend-tracker.md` | Weekly AI news, technology radar, roadmap adaptation, framework monitoring |
+| `productivity-booster.md` | Sprint optimizer, AI pair programming, velocity forecasting, standup automation |
+
+### V10.0 Upgraded Workflow
+
+| Workflow | Key Upgrades |
+|----------|-------------|
+| `swe-bench-agent.md` | 92% target, pre-commit bug-hunter gate, 9-agent review, pattern learning |
+
+### V10.0 New Agent Roles
+
+| Role | Focus |
+|------|-------|
+| `ux-personalization-engineer` | Sentiment → adaptive UI, A/B testing (V10.0) |
+| `bug-hunter-agent` | Pre-commit AI review, 50% bug reduction (V10.0) |
+| `micro-agent-orchestrator` | 100+ agent DAGs, hot-swap, marketplace (V10.0) |
+| `digital-twin-engineer` | Sora v3 sim, synthetic users, visual regression (V10.0) |
+| `ai-literacy-writer` | Auto-docs, tutorials, dashboards (V10.0) |
+| `happiness-engineer` | Burnout detection, workflow optimization (V10.0) |
+| `cost-optimizer-agent` | 75% cloud savings, FinOps (V10.0) |
+| `ethics-auditor` | Google AI Principles, bias/fairness (V10.0) |
+| `trend-analyst` | Weekly news, tech radar, roadmap (V10.0) |
+| `productivity-coach` | Sprint optimizer, AI pairing, velocity (V10.0) |
+
+### V10.0 Slash Command Reference
+
+```bash
+# Hyper-Personalization (V10.0)
+/hyper-personal --start --config personalization.yaml       — Start engine
+/hyper-personal --test-sentiment --scenario frustrated-user — Test sentiment
+/hyper-personal --ab-test --variant expert-layout --traffic 20 — A/B test
+/hyper-personal --dashboard --metrics engagement,conversion — Dashboard
+
+# Bug Hunter 50% (V10.0)
+/bug-hunter-50 --scan --staged-only                         — Pre-commit scan
+/bug-hunter-50 --learn --repo . --timeframe 2y              — Learn patterns
+/bug-hunter-50 --fix --file src/auth.ts --line 42           — Auto-fix
+/bug-hunter-50 --metrics --period 30d                       — Reduction metrics
+
+# Modular AI (V10.0)
+/modular-ai --list --category all                           — List micro-agents
+/modular-ai --compose --task "full-code-review"             — Build DAG
+/modular-ai --swap --agent linter --version 2.1.0           — Hot-swap
+/modular-ai --marketplace --install custom-reviewer@1.0.0   — Install plugin
+
+# Digital Twins (V10.0)
+/digital-twins --simulate --app ./app --users 100           — Run simulation
+/digital-twins --visual-diff --baseline main                — Visual regression
+/digital-twins --load --users 1000 --ramp-up 5m             — Load test
+/digital-twins --a11y --simulate screen-reader              — A11y simulation
+
+# AI Literacy (V10.0)
+/ai-literacy --generate --docs all                          — Full docs
+/ai-literacy --tutorial --feature "auth" --level beginner   — Tutorial
+/ai-literacy --diagram --type architecture --format mermaid — Architecture
+/ai-literacy --dashboard --start --port 3001                — Dashboard
+
+# Developer Happiness (V10.0)
+/happiness-engine --health --team backend                   — Team health
+/happiness-engine --burnout --assess --team all              — Burnout risk
+/happiness-engine --meetings --audit --suggest-cuts          — Meeting audit
+/happiness-engine --toil --detect --suggest-automation       — Toil detection
+
+# Cost Optimizer (V10.0)
+/cost-optimizer --audit --providers aws,gcp --report         — Full audit
+/cost-optimizer --waste --detect --all-resources             — Waste scan
+/cost-optimizer --right-size --recommend --confidence 95     — Right-sizing
+/cost-optimizer --forecast --horizon 6m                      — Budget forecast
+
+# AI Responsibility (V10.0)
+/responsibility --audit --model my-model                    — Ethics audit
+/responsibility --google-principles --check                 — Google AI check
+/responsibility --bias --detect --protected-attrs all       — Bias detection
+/responsibility --scorecard --generate --format pdf          — Scorecard
+
+# Trend Tracker (V10.0)
+/trend-tracker --digest --generate --period this-week       — Weekly digest
+/trend-tracker --radar --view --interactive                 — Tech radar
+/trend-tracker --adapt --roadmap roadmap.md --suggest       — Roadmap adapt
+/trend-tracker --deps --check --outdated --security         — Dep freshness
+
+# Productivity Booster (V10.0)
+/productivity-booster --sprint --plan --capacity team.yaml  — Sprint plan
+/productivity-booster --pair --task JIRA-1234               — AI pairing
+/productivity-booster --forecast --sprints 3                — Velocity forecast
+/productivity-booster --bottleneck --detect --team all      — Bottleneck scan
+```

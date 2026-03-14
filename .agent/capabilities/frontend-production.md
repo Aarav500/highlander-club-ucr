@@ -213,3 +213,162 @@ npm install react-native-web
 ```
 
 Configure Next.js to alias `react-native` → `react-native-web` via `next.config.js`.
+
+---
+
+## Next.js 16 + React 19 (V3.0)
+
+### React Compiler — Zero Manual Memoization
+
+```tsx
+// ❌ Before (React 18)
+const MemoizedChart = React.memo(({ data }: Props) => {
+  const processed = useMemo(() => transform(data), [data]);
+  const handleClick = useCallback(() => onSelect(data.id), [data.id]);
+  return <Chart data={processed} onClick={handleClick} />;
+});
+
+// ✅ After (React 19 Compiler — auto-memoized)
+function Chart({ data }: Props) {
+  const processed = transform(data);
+  const handleClick = () => onSelect(data.id);
+  return <ChartView data={processed} onClick={handleClick} />;
+}
+// Compiler inserts optimal memoization at build time
+```
+
+### Enable React Compiler
+
+```typescript
+// next.config.ts
+const nextConfig = {
+  experimental: {
+    reactCompiler: true,    // React 19 Compiler
+    turbopack: true,        // Turbopack for dev + production
+    ppr: "incremental",     // Partial Prerendering
+  },
+};
+export default nextConfig;
+```
+
+### Server Actions + Mutations (No API Routes Needed)
+
+```tsx
+// app/actions/portfolio.ts
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { z } from "zod";
+
+const TradeSchema = z.object({
+  symbol: z.string().min(1).max(10),
+  quantity: z.number().positive(),
+  side: z.enum(["buy", "sell"]),
+});
+
+export async function executeTrade(formData: FormData) {
+  const parsed = TradeSchema.parse({
+    symbol: formData.get("symbol"),
+    quantity: Number(formData.get("quantity")),
+    side: formData.get("side"),
+  });
+
+  const result = await db.trades.create({ data: parsed });
+  revalidatePath("/portfolio");
+  return { success: true, tradeId: result.id };
+}
+
+// Used directly in forms — no API route, no fetch()
+// app/portfolio/page.tsx
+import { executeTrade } from "@/app/actions/portfolio";
+
+export default function TradePage() {
+  return (
+    <form action={executeTrade}>
+      <input name="symbol" placeholder="AAPL" />
+      <input name="quantity" type="number" />
+      <select name="side">
+        <option value="buy">Buy</option>
+        <option value="sell">Sell</option>
+      </select>
+      <button type="submit">Execute Trade</button>
+    </form>
+  );
+}
+```
+
+### Turbopack — 10x Faster Builds
+
+```bash
+# Dev mode (default in Next.js 16)
+next dev --turbopack
+
+# Production build (new in v16)
+next build --turbopack
+```
+
+| Metric | Webpack (v15) | Turbopack (v16) | Speedup |
+|--------|--------------|----------------|---------|
+| Dev cold start | 8.2s | 1.1s | **7.5x** |
+| HMR (file update) | 320ms | 12ms | **27x** |
+| Production build | 45s | 4.5s | **10x** |
+| Incremental build | 12s | 0.8s | **15x** |
+
+### App Router v2 — Parallel Routes + Intercepting Routes
+
+```
+app/
+├── @modal/             # Parallel route slot
+│   ├── (.)photo/[id]/  # Intercept /photo/[id] as modal
+│   │   └── page.tsx
+│   └── default.tsx
+├── @sidebar/           # Another parallel slot
+│   ├── default.tsx
+│   └── feed/page.tsx
+├── layout.tsx          # Renders both slots simultaneously
+└── page.tsx
+```
+
+```tsx
+// app/layout.tsx — renders parallel routes
+export default function Layout({
+  children,
+  modal,
+  sidebar,
+}: {
+  children: React.ReactNode;
+  modal: React.ReactNode;
+  sidebar: React.ReactNode;
+}) {
+  return (
+    <div className="flex">
+      <aside className="w-64">{sidebar}</aside>
+      <main className="flex-1">{children}</main>
+      {modal}
+    </div>
+  );
+}
+```
+
+### Partial Prerendering (PPR)
+
+```tsx
+// app/dashboard/page.tsx
+import { Suspense } from "react";
+
+// Static shell is pre-rendered at build time
+// Dynamic parts stream in at request time
+export default function Dashboard() {
+  return (
+    <div>
+      <h1>Portfolio Dashboard</h1>  {/* Static — pre-rendered */}
+      <Suspense fallback={<Skeleton />}>
+        <PortfolioValue />  {/* Dynamic — streams in */}
+      </Suspense>
+      <Suspense fallback={<ChartSkeleton />}>
+        <LiveChart />  {/* Dynamic — streams in */}
+      </Suspense>
+    </div>
+  );
+}
+```

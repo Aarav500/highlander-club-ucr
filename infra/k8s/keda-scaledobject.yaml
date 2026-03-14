@@ -1,0 +1,42 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: lab-app-scaler
+  namespace: lab-production
+  labels:
+    lab.version: "4.0"
+spec:
+  scaleTargetRef:
+    name: lab-app
+  pollingInterval: 15
+  cooldownPeriod: 120
+  minReplicaCount: 1
+  maxReplicaCount: 20
+  fallback:
+    failureThreshold: 3
+    replicas: 2
+  triggers:
+    # Scale based on HTTP request rate
+    - type: prometheus
+      metadata:
+        serverAddress: http://prometheus.monitoring.svc:9090
+        metricName: http_requests_per_second
+        query: sum(rate(http_requests_total{app="lab-app"}[2m]))
+        threshold: "100"
+        activationThreshold: "5"
+    # Scale based on CPU utilization
+    - type: cpu
+      metricType: Utilization
+      metadata:
+        value: "70"
+    # Scale based on memory utilization
+    - type: memory
+      metricType: Utilization
+      metadata:
+        value: "80"
+    # Scale based on message queue depth (optional)
+    # - type: rabbitmq
+    #   metadata:
+    #     queueName: tasks
+    #     host: amqp://rabbitmq.default.svc:5672
+    #     queueLength: "50"

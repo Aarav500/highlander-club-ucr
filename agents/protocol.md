@@ -102,6 +102,44 @@ Defines how agents pass work to each other. Every workflow phase transition prod
 | `reviewer` | Code review, security scan, self-review | `self-review`, `security-scan` |
 | `verifier` | Testing, build verification, CI checks | `e2e-test-gen`, `critical-path-hardening` |
 | `ops` | Incident response, deployment, monitoring | `ops-playbook`, `perf-baseline` |
+| `architect` | System design, module boundaries (V4.0 Swarm) | `swarm-v2` |
+| `frontend` | UI/UX lead + component builder (V4.0 Swarm) | `swarm-v2` |
+| `backend` | API lead + services (V4.0 Swarm) | `swarm-v2` |
+| `ml-engineer` | ML/AI model integration (V4.0 Swarm) | `swarm-v2` |
+| `data-engineer` | ETL, analytics pipelines (V4.0 Swarm) | `swarm-v2` |
+| `devops` | Docker, K8s, CI/CD (V4.0 Swarm) | `swarm-v2`, `k8s-deploy` |
+| `docs-writer` | API docs, codemaps, README (V4.0 Swarm) | `swarm-v2` |
+| `deployer` | Build, deploy, health checks (V4.0 Swarm) | `swarm-v2`, `agent-gitops` |
+| `governance-auditor` | Policy enforcement, compliance, audit trail (V5.0 Swarm) | `swarm-v3`, `agent-governance`, `fedramp` |
+| `perf-engineer` | Latency profiling, load testing, optimization (V5.0 Swarm) | `swarm-v3`, `perf-baseline` |
+| `edge-deployer` | WebGPU, TFLite, WASM, on-device deployment (V5.0 Swarm) | `swarm-v3`, `edge-ai` |
+| `rag-specialist` | Vector stores, chunking, retrieval, reranking (V5.0 Swarm) | `swarm-v3` |
+| `eval-runner` | TerminalBench challenges, scoring, leaderboard (V5.0 Swarm) | `swarm-v3`, `terminalbench` |
+| `quantum-engineer` | Quantum circuits, hybrid pipelines (V5.0) | `quantum-ml` |
+| `robotics-engineer` | ROS2, Isaac Sim, URDF, sim-to-real (V5.0) | `robotics`, `physics-sim` |
+| `swe-bench-master` | Code quality 85%+, test-first, mutation testing, fuzzing, 5-agent PR review (V8.0) | `swe-bench-agent`, `code-audit-fix` |
+| `design-governor` | Figma → code, drift detection, consistency audit, pattern library (V7.0) | `agentic-design`, `frontend-design-chooser` |
+| `aiops-engineer` | Davis v3, Keptn, Argo Rollouts, 99.999% SLO, chaos engineering (V8.0) | `ai-ops`, `prod-deploy` |
+| `benchmark-runner` | LiveBench + ARC-AGI-2 evaluation, model comparison, tier recommendation (V8.0) | `benchmark-live`, `terminalbench` |
+| `venue-engineer` | Academic venue template management, CFP parsing, multi-format output (V8.0) | `venue-factory`, `arxiv-bot` |
+| `prompt-optimizer` | DSPy v4 self-improving agent prompts, mutation + selection, ensemble (V8.0) | `dspy-v4`, `swarm-v3` |
+| `compliance-officer` | SOC2 Type II + FedRAMP continuous monitoring, evidence collection (V8.0) | `fedramp`, `agent-governance` |
+| `live-exec-engineer` | Multi-IDE parallel execution, SWE-bench 90% live, Replit + Cursor + Zed orchestration (V9.0) | `live-coding-agents`, `swe-bench-agent` |
+| `finance-quant` | Jump diffusion pricing, ZK order matching, fraud detection, regulatory compliance (V9.0) | `sector-finance`, `ai-ops` |
+| `health-ai-engineer` | HIPAA RAG, medical imaging, clinical NLP, PHI de-identification (V9.0) | `sector-health`, `confidential-ai` |
+| `enterprise-ai-architect` | Air-gapped LLM, enterprise vector DB, private H100 inference, data sovereignty (V9.0) | `sector-enterprise`, `confidential-ai` |
+| `conference-producer` | Talk generation, demo environments, rehearsal, content repurposing (V9.0) | `conference-oracle`, `venue-factory` |
+| `dl-dev-engineer` | LLM fine-tuning (LoRA/QLoRA), RAG v3 training, RLHF v2 agent tuning (V9.0) | `dl-dev2026`, `distributed-training` |
+| `ux-personalization-engineer` | Live sentiment → adaptive UI, dynamic content, A/B testing (V10.0) | `hyper-personalization` |
+| `bug-hunter-agent` | Pre-commit AI review, pattern learning, 50% bug reduction (V10.0) | `bug-hunter`, `swe-bench-agent` |
+| `micro-agent-orchestrator` | 100+ micro-agent DAGs, hot-swap runtime, marketplace (V10.0) | `modular-ai`, `swarm-v3` |
+| `digital-twin-engineer` | Sora v3 world sim, synthetic users, visual regression (V10.0) | `digital-twins`, `e2e-test-gen` |
+| `ai-literacy-writer` | Auto-docs, tutorials, architecture dashboards, onboarding (V10.0) | `ai-literacy` |
+| `happiness-engineer` | Burnout detection, workflow optimization, team health (V10.0) | `happiness-engine` |
+| `cost-optimizer-agent` | 75% cloud savings, right-sizing, spot orchestration, FinOps (V10.0) | `cost-optimizer`, `ai-ops` |
+| `ethics-auditor` | Google AI Principles, bias detection, fairness metrics (V10.0) | `ai-responsibility`, `agent-governance` |
+| `trend-analyst` | Weekly AI news, tech radar, roadmap adaptation (V10.0) | `trend-tracker` |
+| `productivity-coach` | Sprint optimization, AI pairing, velocity forecast, standup automation (V10.0) | `productivity-booster` |
 
 ---
 

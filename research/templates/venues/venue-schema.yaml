@@ -1,0 +1,35 @@
+# Venue Configuration Schema
+# Use this template to add new academic venues
+
+venue:
+  name: ""                    # Short name (e.g., "NeurIPS 2026")
+  full_name: ""               # Full conference name
+  year: 2026
+  location: ""
+
+deadlines:
+  abstract: ""                # ISO 8601 with AoE timezone
+  full_paper: ""
+  supplementary: ""
+  notification: ""
+  camera_ready: ""
+
+format:
+  template: ""                # Template identifier
+  document_class: ""          # LaTeX \documentclass
+  style_file: ""              # .sty or .cls file
+  page_limit: 0               # Excluding references
+  appendix: ""                # "unlimited" or page count
+  columns: 1                  # 1 or 2
+  font_size: "10pt"
+  line_spacing: "single"
+
+submission:
+  platform: ""                # OpenReview, HotCRP, EasyChair, CMT
+  url: ""
+  double_blind: true
+  categories: []              # arXiv categories
+  supplementary_allowed: false
+  code_required: false
+
+checklist: []                 # Venue-specific compliance items

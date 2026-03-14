@@ -1,0 +1,63 @@
+# Model Router Configuration
+# Routes agent tasks to the optimal local model/backend
+# Used by agent workflows when local inference is available
+
+routing:
+  prefer: local
+  fallback: cloud
+  health_check_interval: 60s
+
+  backends:
+    ollama:
+      endpoint: http://localhost:11434/api
+      format: ollama
+      timeout: 120s
+    vllm:
+      endpoint: http://localhost:8000/v1
+      format: openai
+      timeout: 180s
+    nim:
+      endpoint: http://localhost:8001/v1
+      format: openai
+      timeout: 180s
+    cloud:
+      endpoint: https://api.anthropic.com/v1
+      format: anthropic
+      timeout: 300s
+
+  task_routing:
+    code_generation:
+      model: deepseek-coder-v2:16b
+      backend: ollama
+      fallback_model: claude-sonnet
+      fallback_backend: cloud
+
+    reasoning:
+      model: meta-llama/Meta-Llama-3.1-70B-Instruct
+      backend: vllm
+      fallback_model: claude-sonnet
+      fallback_backend: cloud
+
+    quick_edits:
+      model: phi-3:mini
+      backend: ollama
+      fallback_model: claude-haiku
+      fallback_backend: cloud
+
+    security_audit:
+      model: meta/llama-3.1-70b-instruct
+      backend: nim
+      fallback_model: claude-opus
+      fallback_backend: cloud
+
+    research_writing:
+      model: meta-llama/Meta-Llama-3.1-70B-Instruct
+      backend: vllm
+      fallback_model: claude-sonnet
+      fallback_backend: cloud
+
+    summarization:
+      model: gemma2:9b
+      backend: ollama
+      fallback_model: claude-haiku
+      fallback_backend: cloud

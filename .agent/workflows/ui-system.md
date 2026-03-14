@@ -4,7 +4,32 @@ description: "Set up shadcn/ui + Tailwind + glassmorphism design system with Fra
 
 # UI System Workflow
 
-> Bootstrap a premium dark-mode glassmorphism design system using shadcn/ui, Tailwind CSS, and Framer Motion.
+> Bootstrap a premium design system. Phase 0 selects the best design system, visual style, and motion level for the project context. Defaults to glassmorphism dark-mode if no specific context is provided.
+
+---
+
+## Phase 0 — DESIGN CHOOSER (NEW)
+
+Before bootstrapping, determine the optimal UI stack for this project:
+
+1. **Run the frontend design chooser** from `.agent/workflows/frontend-design-chooser.md`:
+   - If the project has a known `page_type` and `brand`, use those as inputs.
+   - If not specified, default to: `page_type="dashboard"`, `brand="modern premium"`, `constraints=["dark-mode"]`.
+
+2. **Outputs from the chooser** determine the rest of this workflow:
+   - `design_system` → which component library to install (Phase 2).
+   - `visual_style` → which Tailwind theme tokens to use (Phase 1).
+   - `motion_level` → whether to install Framer Motion and which presets (Phase 4).
+   - `layout_pattern` → page structure to scaffold (Phase 3).
+
+3. **If the chooser recommends a non-shadcn system** (e.g., Mantine, Chakra, Ant Design):
+   - Skip Phase 2 (shadcn init) and instead install the recommended library.
+   - Adapt Phase 3 component names to match the chosen system.
+   - The glassmorphism tokens in Phase 1 may be replaced by the style's tokens.
+
+4. **If no chooser is run** (quick mode), proceed with defaults: shadcn/ui + glassmorphism + rich motion.
+
+> 💡 Reference: `.agent/capabilities/options-engine.md` and `.agent/capabilities/options-catalog.yaml` for the full catalog of options.
 
 ---
 

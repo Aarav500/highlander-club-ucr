@@ -1,0 +1,314 @@
+# Options Engine — Structured Catalog
+# Machine-readable reference for the agent's decision matrix.
+# See .agent/capabilities/options-engine.md for full documentation.
+
+version: "1.0"
+
+# ─────────────────────────────────────────────────────────
+# FRONTEND
+# ─────────────────────────────────────────────────────────
+frontend:
+  design_systems:
+    - id: shadcn-ui
+      name: "shadcn/ui v2"
+      install: "npx -y shadcn@latest init"
+      bundle_kb: 0
+      copy_paste: true
+      a11y_score: 5
+      requires: [tailwind]
+      best_for: [dashboard, forms, admin, custom]
+      avoid_when: [need-prebuilt-complex-widgets]
+      pairs_with: [radix-ui, tailwind-only]
+
+    - id: mui-v7
+      name: "Material UI v7"
+      install: "npm install @mui/material @emotion/react @emotion/styled"
+      bundle_kb: 85
+      a11y_score: 4
+      best_for: [enterprise, data-grids, theming]
+      avoid_when: [bundle-sensitive, custom-design]
+
+    - id: mantine-v8
+      name: "Mantine v8"
+      install: "npm install @mantine/core @mantine/hooks"
+      bundle_kb: 45
+      a11y_score: 5
+      best_for: [typescript-first, hooks, forms]
+      avoid_when: [non-react]
+
+    - id: chakra-v3
+      name: "Chakra UI v3"
+      install: "npm install @chakra-ui/react"
+      bundle_kb: 50
+      a11y_score: 5
+      best_for: [accessible, composable, prototyping]
+      avoid_when: [max-bundle-optimization]
+
+    - id: ant-design-v6
+      name: "Ant Design v6"
+      install: "npm install antd"
+      bundle_kb: 120
+      a11y_score: 4
+      best_for: [data-tables, forms-heavy, admin, enterprise]
+      avoid_when: [small-marketing, bundle-sensitive]
+
+    - id: headless-ui
+      name: "Headless UI + Tailwind"
+      install: "npm install @headlessui/react"
+      bundle_kb: 12
+      a11y_score: 5
+      best_for: [max-control, minimal-bundle]
+      avoid_when: [rapid-prototyping]
+
+    - id: radix-ui
+      name: "Radix UI Primitives"
+      install: "npm install @radix-ui/react-dialog @radix-ui/react-popover"
+      bundle_kb: 15
+      a11y_score: 5
+      best_for: [unstyled-primitives, composable, accessible]
+      avoid_when: [quick-ship-mvp]
+
+    - id: magic-ui
+      name: "Magic UI"
+      install: "npx -y magicui@latest init"
+      bundle_kb: 20
+      a11y_score: 3
+      best_for: [glassmorphism, landing-pages, hero-sections]
+      avoid_when: [data-heavy, accessible-first]
+
+    - id: daisy-ui
+      name: "DaisyUI"
+      install: "npm install daisyui"
+      bundle_kb: 5
+      a11y_score: 4
+      best_for: [rapid-prototyping, themes, mvp]
+      avoid_when: [deep-customization]
+
+    - id: flowbite
+      name: "Flowbite"
+      install: "npm install flowbite flowbite-react"
+      bundle_kb: 8
+      a11y_score: 4
+      best_for: [tailwind-blocks, marketing, landing]
+      avoid_when: [complex-interactive]
+
+    - id: next-ui
+      name: "NextUI v3"
+      install: "npm install @nextui-org/react"
+      bundle_kb: 30
+      a11y_score: 4
+      best_for: [beautiful-defaults, nextjs-native]
+      avoid_when: [non-nextjs]
+
+    - id: tremor
+      name: "Tremor"
+      install: "npm install @tremor/react"
+      bundle_kb: 40
+      a11y_score: 4
+      best_for: [analytics-dashboard, charts, metrics]
+      avoid_when: [non-dashboard]
+
+    - id: aceternity-ui
+      name: "Aceternity UI"
+      install: "copy-paste from aceternity.com"
+      bundle_kb: 10
+      a11y_score: 3
+      best_for: [animated-landing, hero, creative]
+      avoid_when: [accessible-first, data-heavy]
+
+    - id: park-ui
+      name: "Park UI (Ark)"
+      install: "npm install @park-ui/panda-preset @ark-ui/react"
+      bundle_kb: 18
+      a11y_score: 5
+      best_for: [multi-framework, panda-css]
+      avoid_when: [tailwind-only-projects]
+
+    - id: tailwind-only
+      name: "Pure Tailwind CSS"
+      install: "npm install tailwindcss"
+      bundle_kb: 0
+      a11y_score: 5
+      best_for: [full-control, zero-dependency, custom]
+      avoid_when: [need-prebuilt-components]
+
+  visual_styles:
+    - id: glassmorphism
+      name: "Glassmorphism"
+      tokens: { bg: "rgba(255,255,255,0.05)", blur: "16px", border: "rgba(255,255,255,0.1)" }
+      best_for: [dashboard, premium-dark, fintech]
+
+    - id: flat-minimal
+      name: "Flat Minimal"
+      tokens: { bg: "#ffffff", text: "#111827", accent: "#3b82f6" }
+      best_for: [saas, tools, docs, clean]
+
+    - id: brutalist
+      name: "Brutalist"
+      tokens: { bg: "#ffffff", text: "#000000", border: "3px solid #000" }
+      best_for: [creative, experimental, portfolio]
+
+    - id: neumorphism
+      name: "Neumorphism"
+      tokens: { bg: "#e0e5ec", shadow: "9px 9px 16px #b8bec7, -9px -9px 16px #ffffff" }
+      best_for: [calculator, simple-controls, settings]
+
+    - id: sci-fi
+      name: "Sci-Fi / Cyberpunk"
+      tokens: { bg: "#0a0a1a", accent: "#00ff88", border: "1px solid #00ff8840" }
+      best_for: [gaming, space, security, hud]
+
+    - id: corporate
+      name: "Corporate"
+      tokens: { bg: "#f8fafc", text: "#1e293b", accent: "#2563eb" }
+      best_for: [finance, enterprise, b2b]
+
+    - id: gradient-mesh
+      name: "Gradient Mesh"
+      tokens: { gradient: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" }
+      best_for: [creative, marketing, portfolios]
+
+    - id: dark-luxury
+      name: "Dark Luxury"
+      tokens: { bg: "#0c0c0c", accent: "#d4af37", text: "#f5f5f5" }
+      best_for: [fintech, crypto, luxury, premium]
+
+    - id: light-clean
+      name: "Light Clean"
+      tokens: { bg: "#ffffff", text: "#374151", accent: "#6366f1" }
+      best_for: [consumer, ecommerce, saas]
+
+    - id: retro-pixel
+      name: "Retro / Pixel"
+      tokens: { font: "Press Start 2P", bg: "#1a1a2e", accent: "#e94560" }
+      best_for: [games, nostalgia, fun]
+
+  layout_patterns:
+    - id: marketing-hero
+      sections: [hero, features, testimonials, cta, footer]
+      best_for: [landing-pages, product-pages]
+
+    - id: feature-grid
+      sections: [bento-grid, feature-cards, comparison]
+      best_for: [feature-overview, pricing]
+
+    - id: pricing-page
+      sections: [tier-cards, comparison-table, faq]
+      best_for: [saas-pricing]
+
+    - id: dashboard-dense
+      sections: [sidebar, top-nav, metric-grid, charts, table]
+      best_for: [analytics, admin, monitoring]
+
+    - id: dashboard-minimal
+      sections: [tabs, cards, simple-nav]
+      best_for: [settings, simple-overview]
+
+    - id: forms-wizard
+      sections: [progress-bar, step-form, summary, submit]
+      best_for: [onboarding, checkout, surveys]
+
+    - id: forms-single
+      sections: [centered-form, submit]
+      best_for: [login, signup, settings]
+
+    - id: data-admin
+      sections: [table, filters, bulk-actions, detail-drawer]
+      best_for: [crud, cms, admin-panel]
+
+    - id: data-explorer
+      sections: [search, faceted-filters, results-grid]
+      best_for: [catalog, marketplace, search]
+
+    - id: mobile-bottom-nav
+      sections: [bottom-tabs, cards, pull-refresh]
+      best_for: [mobile-first-apps]
+
+    - id: mobile-cards
+      sections: [card-feed, infinite-scroll]
+      best_for: [social, feed-based]
+
+    - id: docs-layout
+      sections: [sidebar-nav, content, toc]
+      best_for: [documentation, knowledge-base]
+
+    - id: blank-canvas
+      sections: []
+      best_for: [fully-custom]
+
+  motion_levels:
+    - id: none
+      framer_motion: false
+      techniques: [instant-transitions]
+      best_for: [accessible, data-dense, performance]
+
+    - id: subtle
+      framer_motion: true
+      techniques: [hover-effects, fade-in, focus-rings, 200ms-transitions]
+      best_for: [professional, enterprise, mobile]
+
+    - id: rich
+      framer_motion: true
+      techniques: [scroll-triggered, parallax, stagger-children, layout-animations]
+      best_for: [marketing, portfolios, landing-pages]
+
+    - id: cinematic
+      framer_motion: true
+      techniques: [page-transitions, 3d-camera, particles, view-transitions-api]
+      best_for: [hero-sections, creative-showcase]
+
+# ─────────────────────────────────────────────────────────
+# BACKEND
+# ─────────────────────────────────────────────────────────
+backend:
+  frameworks:
+    - { id: trpc-zod, name: "tRPC + Zod", lang: typescript, best_for: [type-safe, nextjs] }
+    - { id: fastify, name: "Fastify", lang: nodejs, best_for: [high-perf, api] }
+    - { id: express, name: "Express", lang: nodejs, best_for: [simple-rest, ecosystem] }
+    - { id: hono, name: "Hono", lang: typescript, best_for: [edge, cloudflare] }
+    - { id: remix-loader, name: "Remix Loaders", lang: typescript, best_for: [fullstack, ssr] }
+    - { id: nestjs, name: "NestJS", lang: typescript, best_for: [enterprise, di, modular] }
+    - { id: fastapi, name: "FastAPI", lang: python, best_for: [ml-api, data-science] }
+    - { id: django-ninja, name: "Django Ninja", lang: python, best_for: [rapid-api, admin] }
+
+  databases:
+    - { id: postgres, name: "PostgreSQL", type: relational, best_for: [general, acid] }
+    - { id: supabase, name: "Supabase", type: postgres-service, best_for: [auth-db-storage] }
+    - { id: planetscale, name: "PlanetScale", type: mysql, best_for: [horizontal-scale] }
+    - { id: turso, name: "Turso (libSQL)", type: sqlite-edge, best_for: [edge, low-latency] }
+    - { id: neon, name: "Neon", type: serverless-postgres, best_for: [branching, autoscale] }
+    - { id: mongodb, name: "MongoDB Atlas", type: document, best_for: [flexible-schema] }
+    - { id: redis, name: "Redis / Dragonfly", type: kv, best_for: [cache, sessions, queues] }
+
+  auth:
+    - { id: nextauth, name: "NextAuth.js", type: self-hosted, best_for: [full-control] }
+    - { id: clerk, name: "Clerk", type: managed, best_for: [enterprise-sso, prebuilt-ui] }
+    - { id: lucia, name: "Lucia", type: library, best_for: [lightweight, any-framework] }
+    - { id: supabase-auth, name: "Supabase Auth", type: managed, best_for: [supabase-stack] }
+    - { id: auth0, name: "Auth0", type: managed, best_for: [enterprise, compliance] }
+
+# ─────────────────────────────────────────────────────────
+# DEPLOY
+# ─────────────────────────────────────────────────────────
+deploy:
+  platforms:
+    - { id: vercel, name: "Vercel", type: serverless, best_for: [nextjs, preview-deploys] }
+    - { id: netlify, name: "Netlify", type: serverless, best_for: [jamstack, forms] }
+    - { id: cloudflare, name: "Cloudflare Pages", type: edge, best_for: [global-edge, workers] }
+    - { id: render, name: "Render", type: container, best_for: [docker, managed] }
+    - { id: fly-io, name: "Fly.io", type: edge-container, best_for: [low-latency, multi-region] }
+    - { id: railway, name: "Railway", type: container, best_for: [simple-deploys, postgres] }
+    - { id: k8s, name: "Kubernetes", type: container, best_for: [enterprise, full-control] }
+    - { id: lambda, name: "AWS Lambda", type: serverless, best_for: [event-driven, cost] }
+
+# ─────────────────────────────────────────────────────────
+# MOBILE
+# ─────────────────────────────────────────────────────────
+mobile:
+  frameworks:
+    - { id: expo, name: "React Native Expo", lang: typescript, platforms: [ios, android], best_for: [js-teams, rapid] }
+    - { id: flutter, name: "Flutter 4.2", lang: dart, platforms: [ios, android, web], best_for: [pixel-perfect, cross] }
+    - { id: tauri, name: "Tauri 2.0", lang: "rust+web", platforms: [desktop], best_for: [desktop-wrapper] }
+    - { id: capacitor, name: "Capacitor", lang: typescript, platforms: [ios, android], best_for: [web-to-native] }
+    - { id: ionic, name: "Ionic", lang: typescript, platforms: [ios, android, web], best_for: [hybrid, web-devs] }
+    - { id: nativescript, name: "NativeScript", lang: typescript, platforms: [ios, android], best_for: [true-native] }
