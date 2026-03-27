@@ -7,10 +7,10 @@ require('dotenv').config({ path: path.resolve(__dirname, '../../../.env') });
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// CORS — restrict to known origins
+// CORS — allow mobile app + web
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',')
-  : ['http://localhost:3000', 'http://localhost:8081'];
+  : ['http://localhost:3000', 'http://localhost:8081', 'https://highlander-club-ucr-production.up.railway.app'];
 
 app.use(cors({
   origin: (origin, cb) => {

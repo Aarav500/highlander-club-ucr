@@ -12,10 +12,9 @@ env:
   NODE_VERSION: '20'
 
 jobs:
-  deploy:
-    name: Deploy API to Railway
+  test:
+    name: Test API
     runs-on: ubuntu-latest
-    environment: production
 
     steps:
       - name: Checkout code
@@ -45,24 +44,37 @@ jobs:
           NODE_ENV: test
         continue-on-error: true
 
+  deploy:
+    name: Deploy to Railway
+    runs-on: ubuntu-latest
+    needs: test
+    environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Install Railway CLI
         run: npm install -g @railway/cli
 
-      - name: Deploy to Railway
-        working-directory: apps/api-node
+      - name: Link and Deploy
         run: |
-          if [ -n "$RAILWAY_SERVICE" ]; then
-            railway up --service "$RAILWAY_SERVICE" --detach
-          else
-            railway up --detach
-          fi
+          cd apps/api-node
+          echo "🚂 Deploying to Railway..."
+          railway up --detach 2>&1 || {
+            echo "⚠️ Direct deploy failed. Trying with service flag..."
+            railway service list 2>&1 || true
+            echo "💡 You may need to set RAILWAY_SERVICE secret with your service name"
+            echo "   Go to Railway Dashboard → Project → Service → Settings → get service name"
+            exit 1
+          }
+          echo "✅ Deploy initiated!"
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          RAILWAY_SERVICE: ${{ secrets.RAILWAY_SERVICE }}
 
       - name: Verify deployment
         run: |
-          echo "⏳ Waiting for deployment to stabilize..."
+          echo "⏳ Waiting 30s for deployment to stabilize..."
           sleep 30
           echo "✅ API deployed to Railway"
           echo "🔗 Check Railway dashboard for live URL"

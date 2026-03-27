@@ -2,7 +2,7 @@
 import { Platform } from 'react-native';
 
 const getApiUrl = () => {
-  if (!__DEV__) return 'https://api.highlanderevents.com';
+  if (!__DEV__) return 'https://highlander-club-ucr-production.up.railway.app';
   // Web and iOS can reach localhost directly; Android emulator uses 10.0.2.2
   if (Platform.OS === 'web' || Platform.OS === 'ios') return 'http://localhost:3001';
   return 'http://10.0.2.2:3001';
