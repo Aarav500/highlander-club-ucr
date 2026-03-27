@@ -50,9 +50,15 @@ jobs:
 
       - name: Deploy to Railway
         working-directory: apps/api-node
-        run: railway up --service api-node
+        run: |
+          if [ -n "$RAILWAY_SERVICE" ]; then
+            railway up --service "$RAILWAY_SERVICE" --detach
+          else
+            railway up --detach
+          fi
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_SERVICE: ${{ secrets.RAILWAY_SERVICE }}
 
       - name: Verify deployment
         run: |
