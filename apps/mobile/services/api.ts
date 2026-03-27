@@ -47,6 +47,7 @@ async function request(path: string, options: RequestInit = {}) {
 export const auth = {
   login: (email: string) => request('/api/auth/login', { method: 'POST', body: JSON.stringify({ email }) }),
   verify: (email: string, code: string) => request('/api/auth/verify', { method: 'POST', body: JSON.stringify({ email, code }) }),
+  devLogin: (email: string) => request('/api/auth/dev-login', { method: 'POST', body: JSON.stringify({ email }) }),
   logout: () => request('/api/auth/logout', { method: 'POST' }),
 };
 

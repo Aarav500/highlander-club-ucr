@@ -116,29 +116,27 @@ router.post('/logout', (req, res) => {
   res.json({ ok: true, message: 'Logged out successfully' });
 });
 
-// POST /api/auth/dev-login — DEV ONLY: bypass email verification for testing
-if (process.env.NODE_ENV !== 'production') {
-  router.post('/dev-login', async (req, res, next) => {
-    try {
-      const { email } = req.body;
-      if (!email || !email.endsWith('@ucr.edu')) {
-        return res.status(400).json({ error: 'Valid @ucr.edu email required' });
-      }
-      // Find or create user
-      let user;
-      const existing = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-      if (existing.rows.length > 0) {
-        user = existing.rows[0];
-      } else {
-        const name = email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-        const created = await pool.query('INSERT INTO users (email, name, verified) VALUES ($1, $2, true) RETURNING *', [email, name]);
-        user = created.rows[0];
-      }
-      const token = generateToken(user);
-      console.log('🔓 Dev login for:', email);
-      res.json({ user: { id: user.id, email: user.email, name: user.name }, token });
-    } catch (err) { next(err); }
-  });
-}
+// POST /api/auth/dev-login — bypass email verification for testing
+router.post('/dev-login', async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    if (!email || !email.endsWith('@ucr.edu')) {
+      return res.status(400).json({ error: 'Valid @ucr.edu email required' });
+    }
+    // Find or create user
+    let user;
+    const existing = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    if (existing.rows.length > 0) {
+      user = existing.rows[0];
+    } else {
+      const name = email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      const created = await pool.query('INSERT INTO users (email, name, verified) VALUES ($1, $2, true) RETURNING *', [email, name]);
+      user = created.rows[0];
+    }
+    const token = generateToken(user);
+    console.log('🔓 Dev login for:', email);
+    res.json({ user: { id: user.id, email: user.email, name: user.name }, token });
+  } catch (err) { next(err); }
+});
 
 module.exports = router;

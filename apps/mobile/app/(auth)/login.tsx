@@ -26,10 +26,19 @@ export default function LoginScreen() {
     setLoading(true);
     setError('');
     try {
-      await auth.login(email);
-      setStep('code');
+      // Use dev-login for direct authentication (testing mode)
+      const result = await auth.devLogin(email);
+      if (result.token) {
+        await AsyncStorage.setItem('auth_token', result.token);
+        setAuthToken(result.token);
+        router.replace('/(tabs)' as any);
+      } else {
+        // Fallback to verification code flow
+        await auth.login(email);
+        setStep('code');
+      }
     } catch (err: any) {
-      setError(err.message || 'Failed to send code');
+      setError(err.message || 'Failed to sign in');
     } finally {
       setLoading(false);
     }
