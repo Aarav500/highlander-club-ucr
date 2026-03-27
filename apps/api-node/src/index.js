@@ -10,12 +10,18 @@ const PORT = process.env.PORT || 3001;
 // CORS — allow mobile app + web
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',')
-  : ['http://localhost:3000', 'http://localhost:8081', 'https://highlander-club-ucr-production.up.railway.app'];
+  : ['http://localhost:3000', 'http://localhost:8081'];
 
 app.use(cors({
   origin: (origin, cb) => {
     // Allow requests with no origin (mobile apps, curl)
-    if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+    if (!origin) return cb(null, true);
+    // Allow all origins if wildcard is set
+    if (allowedOrigins.includes('*')) return cb(null, true);
+    // Allow specific origins
+    if (allowedOrigins.includes(origin)) return cb(null, true);
+    // Allow all Railway domains
+    if (origin.endsWith('.up.railway.app')) return cb(null, true);
     cb(new Error(`CORS: origin ${origin} not allowed`));
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
