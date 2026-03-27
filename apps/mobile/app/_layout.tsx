@@ -95,6 +95,7 @@ export default function RootLayout() {
         <Stack.Screen name="event/[id]" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="club/[id]" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="club-dashboard/[id]" options={{ headerShown: false, presentation: 'modal' }} />
+        <Stack.Screen name="admin-panel/[id]" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="club-chat/[id]" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="event-ticket/[id]" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="leaderboard" options={{ headerShown: false, presentation: 'modal' }} />

@@ -7,7 +7,22 @@ if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
 
 const JWT_SECRET = process.env.JWT_SECRET || 'highlander-events-dev-secret';
 
-// Verify JWT token — attaches user to req.user
+// ─── Role hierarchy (higher index = more permissions) ───────────────────────
+const ROLE_HIERARCHY = {
+  member: 0,
+  moderator: 1,
+  officer: 2,
+  vice_president: 3,
+  president: 4,
+};
+
+// Roles that can perform admin-level actions (create events, manage settings)
+const ADMIN_ROLES = ['president', 'vice_president', 'officer'];
+
+// Roles that can manage staff (invite, change roles)
+const STAFF_MANAGEMENT_ROLES = ['president', 'vice_president'];
+
+// ─── Verify JWT token — attaches user to req.user ───────────────────────────
 function authenticate(req, res, next) {
   const header = req.headers.authorization;
   if (!header || !header.startsWith('Bearer ')) {
@@ -24,9 +39,11 @@ function authenticate(req, res, next) {
   }
 }
 
-// Check if user is admin of a specific club
-// Usage: requireClubAdmin('club_id_param_name')
-function requireClubAdmin(clubIdParam = 'id') {
+// ─── Check if user has a specific role (or higher) in a club ────────────────
+// Usage: requireClubRole('officer') — requires officer, VP, or president
+function requireClubRole(minimumRole = 'officer', clubIdParam = 'id') {
+  const minLevel = ROLE_HIERARCHY[minimumRole] || 0;
+
   return async (req, res, next) => {
     const clubId = req.params[clubIdParam] || req.body.club_id;
 
@@ -40,10 +57,23 @@ function requireClubAdmin(clubIdParam = 'id') {
         [req.user.id, clubId]
       );
 
-      if (result.rows.length === 0 || result.rows[0].role !== 'admin') {
-        return res.status(403).json({ error: 'Club admin access required' });
+      if (result.rows.length === 0) {
+        return res.status(403).json({ error: 'You are not a member of this club' });
       }
 
+      const userRole = result.rows[0].role;
+      const userLevel = ROLE_HIERARCHY[userRole] || 0;
+
+      if (userLevel < minLevel) {
+        return res.status(403).json({ 
+          error: `Requires ${minimumRole} or higher role`,
+          your_role: userRole
+        });
+      }
+
+      // Attach the user's club role for downstream use
+      req.clubRole = userRole;
+      req.clubRoleLevel = userLevel;
       next();
     } catch (err) {
       next(err);
@@ -51,13 +81,34 @@ function requireClubAdmin(clubIdParam = 'id') {
   };
 }
 
-// Generate JWT for a user
+// ─── Legacy compatibility: Check if user is admin of a specific club ────────
+// Now checks for officer+ (president, vice_president, officer)
+function requireClubAdmin(clubIdParam = 'id') {
+  return requireClubRole('officer', clubIdParam);
+}
+
+// ─── Check if user is president of a club ───────────────────────────────────
+function requireClubPresident(clubIdParam = 'id') {
+  return requireClubRole('president', clubIdParam);
+}
+
+// ─── Generate JWT for a user ────────────────────────────────────────────────
 function generateToken(user) {
   return jwt.sign(
-    { id: user.id, email: user.email, name: user.name },
+    { id: user.id, email: user.email, name: user.name || user.display_name },
     JWT_SECRET,
     { expiresIn: '30d' }
   );
 }
 
-module.exports = { authenticate, requireClubAdmin, generateToken, JWT_SECRET };
+module.exports = { 
+  authenticate, 
+  requireClubRole,
+  requireClubAdmin, 
+  requireClubPresident,
+  generateToken, 
+  JWT_SECRET,
+  ROLE_HIERARCHY,
+  ADMIN_ROLES,
+  STAFF_MANAGEMENT_ROLES,
+};

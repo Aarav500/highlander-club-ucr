@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db/pool');
-const { authenticate, requireClubAdmin } = require('../middleware/auth');
+const { authenticate, requireClubAdmin, ADMIN_ROLES } = require('../middleware/auth');
 const { upload } = require('../middleware/upload');
 
 // GET /api/events — Feed with filters (only published)
@@ -139,7 +139,7 @@ router.get('/:id', authenticate, async (req, res, next) => {
       SELECT e.*, c.name as club_name, c.logo_url as club_logo, c.id as club_id,
              COUNT(r.user_id) as rsvp_count,
              EXISTS(SELECT 1 FROM rsvps WHERE user_id = $2 AND event_id = e.id) as user_rsvped,
-             EXISTS(SELECT 1 FROM club_members m WHERE m.user_id = $2 AND m.club_id = c.id AND m.role = 'admin') as is_admin
+             EXISTS(SELECT 1 FROM club_members m WHERE m.user_id = $2 AND m.club_id = c.id AND m.role IN ('president','vice_president','officer')) as is_admin
       FROM events e
       JOIN clubs c ON e.club_id = c.id
       LEFT JOIN rsvps r ON r.event_id = e.id
@@ -204,8 +204,8 @@ router.post('/', authenticate, upload.single('image'), async (req, res, next) =>
 
     // Check admin
     const admin = await pool.query(
-      'SELECT role FROM club_members WHERE user_id = $1 AND club_id = $2 AND role = $3',
-      [req.user.id, club_id, 'admin']
+      "SELECT role FROM club_members WHERE user_id = $1 AND club_id = $2 AND role IN ('president','vice_president','officer')",
+      [req.user.id, club_id]
     );
     if (admin.rows.length === 0) {
       return res.status(403).json({ error: 'Club admin access required' });
@@ -230,8 +230,8 @@ router.put('/:id', authenticate, async (req, res, next) => {
     if (event.rows.length === 0) return res.status(404).json({ error: 'Event not found' });
 
     const admin = await pool.query(
-      'SELECT role FROM club_members WHERE user_id = $1 AND club_id = $2 AND role = $3',
-      [req.user.id, event.rows[0].club_id, 'admin']
+      "SELECT role FROM club_members WHERE user_id = $1 AND club_id = $2 AND role IN ('president','vice_president','officer')",
+      [req.user.id, event.rows[0].club_id]
     );
     if (admin.rows.length === 0) return res.status(403).json({ error: 'Club admin access required' });
 
@@ -262,8 +262,8 @@ router.delete('/:id', authenticate, async (req, res, next) => {
     if (event.rows.length === 0) return res.status(404).json({ error: 'Event not found' });
 
     const admin = await pool.query(
-      'SELECT role FROM club_members WHERE user_id = $1 AND club_id = $2 AND role = $3',
-      [req.user.id, event.rows[0].club_id, 'admin']
+      "SELECT role FROM club_members WHERE user_id = $1 AND club_id = $2 AND role IN ('president','vice_president','officer')",
+      [req.user.id, event.rows[0].club_id]
     );
     if (admin.rows.length === 0) return res.status(403).json({ error: 'Club admin access required' });
 
@@ -357,8 +357,8 @@ router.delete('/:id/photos/:photoId', authenticate, async (req, res, next) => {
     if (event.rows.length === 0) return res.status(404).json({ error: 'Event not found' });
 
     const admin = await pool.query(
-      'SELECT role FROM club_members WHERE user_id = $1 AND club_id = $2 AND role = $3',
-      [req.user.id, event.rows[0].club_id, 'admin']
+      "SELECT role FROM club_members WHERE user_id = $1 AND club_id = $2 AND role IN ('president','vice_president','officer')",
+      [req.user.id, event.rows[0].club_id]
     );
     if (admin.rows.length === 0) return res.status(403).json({ error: 'Club admin access required' });
 

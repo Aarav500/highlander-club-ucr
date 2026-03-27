@@ -106,13 +106,22 @@ export default function ClubDetailScreen() {
             <Text style={styles.followBtnText}>Chat</Text>
           </TouchableOpacity>
           {club.is_admin && (
-            <TouchableOpacity
-              style={[styles.followBtn, { backgroundColor: theme.surfaceElevated, marginTop: 0 }]}
-              onPress={() => router.push(`/club-dashboard/${club.id}` as any)}
-            >
-              <Ionicons name="bar-chart" size={18} color={theme.accent} />
-              <Text style={[styles.followBtnText, { color: theme.accent }]}>Dashboard</Text>
-            </TouchableOpacity>
+            <>
+              <TouchableOpacity
+                style={[styles.followBtn, { backgroundColor: '#003A70', marginTop: 0 }]}
+                onPress={() => router.push(`/admin-panel/${club.id}` as any)}
+              >
+                <Ionicons name="shield-checkmark" size={18} color="#FFF" />
+                <Text style={styles.followBtnText}>Admin Panel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.followBtn, { backgroundColor: theme.surfaceElevated, marginTop: 0 }]}
+                onPress={() => router.push(`/club-dashboard/${club.id}` as any)}
+              >
+                <Ionicons name="bar-chart" size={18} color={theme.accent} />
+                <Text style={[styles.followBtnText, { color: theme.accent }]}>Dashboard</Text>
+              </TouchableOpacity>
+            </>
           )}
         </View>
       </View>

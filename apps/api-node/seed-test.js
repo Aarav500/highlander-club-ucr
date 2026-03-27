@@ -1,10 +1,23 @@
+// ============================================================================
+// Development-only test seed — DO NOT run in production
+// Usage: NODE_ENV=development node seed-test.js
+// ============================================================================
+
+if (process.env.NODE_ENV === 'production') {
+  console.error('❌ REFUSING to run test seed in production!');
+  process.exit(1);
+}
+
 const pool = require('./src/db/pool');
 
 async function seed() {
   try {
+    console.log('⚠️  Running development test seed...');
+
     // Create test user
     const user = await pool.query(
-      `INSERT INTO users (email, name, verified) VALUES ('test@ucr.edu', 'Test Highlander', true)
+      `INSERT INTO users (email, name, display_name, ucr_netid, auth_provider, verified) 
+       VALUES ('test@ucr.edu', 'Test Highlander', 'Test Highlander', 'testa001', 'email_code', true)
        ON CONFLICT (email) DO UPDATE SET name='Test Highlander' RETURNING id`
     );
     const userId = user.rows[0].id;
@@ -30,11 +43,11 @@ async function seed() {
     const allClubs = await pool.query('SELECT id, name, category FROM clubs ORDER BY name');
     console.log('Clubs created:', allClubs.rows.length);
 
-    // Make user admin of first club
+    // Make user president of first club (using new role system)
     if (allClubs.rows[0]) {
       await pool.query(
         'INSERT INTO club_members (user_id, club_id, role) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING',
-        [userId, allClubs.rows[0].id, 'admin']
+        [userId, allClubs.rows[0].id, 'president']
       );
     }
 
@@ -50,13 +63,10 @@ async function seed() {
     const now = new Date();
     const eventData = [
       { title: 'AI Workshop: Intro to LLMs', desc: 'Learn about large language models and build a chatbot', cat: 'Academic', hoursFromNow: 2, location: 'Winston Chung Hall 138' },
-      { title: 'Smash Bros Tournament', desc: 'Bring your controllers! Cash prizes for top 3. All skill levels welcome.', cat: 'Social', hoursFromNow: -1, location: 'HUB 302', ticketPrice: 5 },
-      { title: 'Intramural Soccer Practice', desc: 'Weekly practice session. Cleats required, shin guards recommended.', cat: 'Sports', hoursFromNow: 24, location: 'UCR Soccer Field' },
+      { title: 'Smash Bros Tournament', desc: 'Bring your controllers! Cash prizes for top 3.', cat: 'Social', hoursFromNow: -1, location: 'HUB 302', ticketPrice: 5 },
+      { title: 'Intramural Soccer Practice', desc: 'Weekly practice session. Cleats required.', cat: 'Sports', hoursFromNow: 24, location: 'UCR Soccer Field' },
       { title: 'Resume Review Workshop', desc: 'Get your resume reviewed by engineers from Google, Meta, and Amazon', cat: 'Career', hoursFromNow: 48, location: 'Career Center' },
       { title: 'Lunar New Year Festival', desc: 'Food, lion dances, performances, and cultural activities!', cat: 'Cultural', hoursFromNow: 72, location: 'Bell Tower' },
-      { title: 'Greek Week Kickoff', desc: 'Annual Greek Week opening ceremony with all chapters', cat: 'Greek Life', hoursFromNow: 96, location: 'Student Recreation Center' },
-      { title: 'Cybersecurity CTF', desc: 'Capture the flag competition. Teams of 2-4. Beginners welcome!', cat: 'Academic', hoursFromNow: 120, location: 'Bourns A265' },
-      { title: 'Outdoor Movie Night', desc: 'Screening of Interstellar under the stars. Free popcorn!', cat: 'Social', hoursFromNow: 144, location: 'Bell Tower Lawn', ticketPrice: 0 },
     ];
 
     for (const ev of eventData) {
@@ -80,14 +90,8 @@ async function seed() {
       await pool.query('INSERT INTO rsvps (user_id, event_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [userId, e.id]);
     }
 
-    // Generate a login code for testing
-    const code = '123456';
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
-    await pool.query('UPDATE login_codes SET used = true WHERE email = $1 AND used = false', ['test@ucr.edu']);
-    await pool.query('INSERT INTO login_codes (email, code, expires_at) VALUES ($1, $2, $3)', ['test@ucr.edu', code, expiresAt]);
-    console.log('Login code for test@ucr.edu: 123456');
-
-    console.log('=== SEED COMPLETE ===');
+    console.log('=== DEV SEED COMPLETE ===');
+    console.log('To log in, use the email verification flow. Code will be printed in server logs.');
     pool.end();
   } catch (e) {
     console.error('Seed error:', e.message);

@@ -46,15 +46,33 @@ async function request(path: string, options: RequestInit = {}) {
   return response.json();
 }
 
-// Auth
+// ═══════════════════════════════════════════════════════════════════════════════
+// Auth — UCR CAS SSO + Email Code Fallback
+// ═══════════════════════════════════════════════════════════════════════════════
 export const auth = {
-  login: (email: string) => request('/api/auth/login', { method: 'POST', body: JSON.stringify({ email }) }),
-  verify: (email: string, code: string) => request('/api/auth/verify', { method: 'POST', body: JSON.stringify({ email, code }) }),
-  devLogin: (email: string) => request('/api/auth/dev-login', { method: 'POST', body: JSON.stringify({ email }) }),
-  logout: () => request('/api/auth/logout', { method: 'POST' }),
+  // Get the CAS login URL for redirect
+  getCASLoginUrl: (platform: string = 'mobile') => {
+    const baseUrl = API_URL || PRODUCTION_API;
+    return `${baseUrl}/api/auth/cas/login?platform=${platform}`;
+  },
+  // Validate a CAS callback (used when deep link returns with ticket)
+  casCallback: (ticket: string) =>
+    request(`/api/auth/cas/callback?ticket=${encodeURIComponent(ticket)}&platform=mobile`),
+  // Email-code flow (fallback for development)
+  login: (email: string) =>
+    request('/api/auth/login', { method: 'POST', body: JSON.stringify({ email }) }),
+  verify: (email: string, code: string) =>
+    request('/api/auth/verify', { method: 'POST', body: JSON.stringify({ email, code }) }),
+  // Session
+  logout: () =>
+    request('/api/auth/logout', { method: 'POST' }),
+  me: () =>
+    request('/api/auth/me'),
 };
 
+// ═══════════════════════════════════════════════════════════════════════════════
 // Events
+// ═══════════════════════════════════════════════════════════════════════════════
 export const events = {
   list: (params?: Record<string, string>) => {
     const query = params ? '?' + new URLSearchParams(params).toString() : '';
@@ -73,7 +91,9 @@ export const events = {
   deletePhoto: (eventId: string, photoId: string) => request(`/api/events/${eventId}/photos/${photoId}`, { method: 'DELETE' }),
 };
 
+// ═══════════════════════════════════════════════════════════════════════════════
 // Clubs
+// ═══════════════════════════════════════════════════════════════════════════════
 export const clubs = {
   list: (params?: Record<string, string>) => {
     const query = params ? '?' + new URLSearchParams(params).toString() : '';
@@ -83,9 +103,22 @@ export const clubs = {
   create: (data: any) => request('/api/clubs', { method: 'POST', body: JSON.stringify(data) }),
   follow: (id: string) => request(`/api/clubs/${id}/follow`, { method: 'POST' }),
   dashboard: (id: string) => request(`/api/clubs/${id}/dashboard`),
+  // Staff management
+  staff: (id: string) => request(`/api/clubs/${id}/staff`),
+  inviteStaff: (id: string, email: string, role: string) =>
+    request(`/api/clubs/${id}/staff/invite`, { method: 'POST', body: JSON.stringify({ email, role }) }),
+  staffInvites: (id: string) => request(`/api/clubs/${id}/staff/invites`),
+  updateStaffRole: (clubId: string, userId: string, role: string) =>
+    request(`/api/clubs/${clubId}/staff/${userId}`, { method: 'PUT', body: JSON.stringify({ role }) }),
+  removeStaff: (clubId: string, userId: string) =>
+    request(`/api/clubs/${clubId}/staff/${userId}`, { method: 'DELETE' }),
+  transferPresidency: (clubId: string, userId: string) =>
+    request(`/api/clubs/${clubId}/transfer`, { method: 'POST', body: JSON.stringify({ user_id: userId }) }),
 };
 
+// ═══════════════════════════════════════════════════════════════════════════════
 // Users
+// ═══════════════════════════════════════════════════════════════════════════════
 export const users = {
   me: () => request('/api/users/me'),
   update: (data: any) => request('/api/users/me', { method: 'PUT', body: JSON.stringify(data) }),

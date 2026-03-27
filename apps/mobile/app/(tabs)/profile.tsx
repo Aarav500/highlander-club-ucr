@@ -6,8 +6,9 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors, Spacing, BorderRadius, FontSize } from '../../constants/Colors';
-import { users as usersApi, events as eventsApi, clubs as clubsApi, points as pointsApi } from '../../services/api';
+import { users as usersApi, events as eventsApi, clubs as clubsApi, points as pointsApi, setAuthToken } from '../../services/api';
 
 type TabKey = 'events' | 'following' | 'friends';
 
@@ -239,7 +240,23 @@ export default function ProfileScreen() {
         )}
 
         {/* Sign Out */}
-        <TouchableOpacity style={styles.signOutBtn}>
+        <TouchableOpacity
+          style={styles.signOutBtn}
+          onPress={() => {
+            Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+              { text: 'Cancel', style: 'cancel' },
+              {
+                text: 'Sign Out',
+                style: 'destructive',
+                onPress: async () => {
+                  await AsyncStorage.removeItem('auth_token');
+                  setAuthToken(null);
+                  router.replace('/(auth)/login' as any);
+                },
+              },
+            ]);
+          }}
+        >
           <Text style={styles.signOutText}>Sign out</Text>
         </TouchableOpacity>
       </ScrollView>
