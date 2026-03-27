@@ -4,8 +4,8 @@ import { Platform } from 'react-native';
 const PRODUCTION_API = 'https://highlander-club-ucr-production.up.railway.app';
 
 const getApiUrl = () => {
-  // Web always uses production API (expo export keeps __DEV__=true)
-  if (Platform.OS === 'web') return PRODUCTION_API;
+  // Web uses same-origin proxy (server.js forwards /api → Railway API)
+  if (Platform.OS === 'web') return '';
   // Native: production builds use Railway, dev builds use localhost
   if (!__DEV__) return PRODUCTION_API;
   if (Platform.OS === 'ios') return 'http://localhost:3001';
