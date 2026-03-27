@@ -35,6 +35,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "338e2c70-def5-4c21-bc86-031709c47353"
+      }
+    },
+    "owner": "aarav500"
   }
 }
