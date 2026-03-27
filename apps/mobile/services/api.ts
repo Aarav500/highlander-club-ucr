@@ -1,14 +1,17 @@
 // API Service — connects mobile app to Highlander Events backend
 import { Platform } from 'react-native';
 
+const PRODUCTION_API = 'https://highlander-club-ucr-production.up.railway.app';
+
 const getApiUrl = () => {
-  if (!__DEV__) return 'https://highlander-club-ucr-production.up.railway.app';
-  // Web and iOS can reach localhost directly; Android emulator uses 10.0.2.2
-  if (Platform.OS === 'web' || Platform.OS === 'ios') return 'http://localhost:3001';
-  return 'http://10.0.2.2:3001';
+  // Web always uses production API (expo export keeps __DEV__=true)
+  if (Platform.OS === 'web') return PRODUCTION_API;
+  // Native: production builds use Railway, dev builds use localhost
+  if (!__DEV__) return PRODUCTION_API;
+  if (Platform.OS === 'ios') return 'http://localhost:3001';
+  return 'http://10.0.2.2:3001'; // Android emulator
 };
 const API_URL = getApiUrl();
-// For physical device, use your machine's local IP e.g. 'http://192.168.x.x:3001'
 
 let authToken: string | null = null;
 
