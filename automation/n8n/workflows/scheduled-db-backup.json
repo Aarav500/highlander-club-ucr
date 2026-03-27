@@ -1,0 +1,170 @@
+{
+  "name": "💾 Scheduled DB Backup",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "cronExpression", "expression": "0 2 * * *" }]
+        }
+      },
+      "id": "cron-trigger",
+      "name": "Daily at 2 AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [220, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "timestamp",
+              "name": "backup_timestamp",
+              "value": "={{ $now.format('yyyy-MM-dd_HH-mm') }}",
+              "type": "string"
+            },
+            {
+              "id": "db-host",
+              "name": "db_host",
+              "value": "={{ $env.DB_POSTGRESDB_HOST || 'postgres' }}",
+              "type": "string"
+            },
+            {
+              "id": "db-name",
+              "name": "db_name",
+              "value": "={{ $env.DB_POSTGRESDB_DATABASE || 'n8n' }}",
+              "type": "string"
+            },
+            {
+              "id": "db-user",
+              "name": "db_user",
+              "value": "={{ $env.DB_POSTGRESDB_USER || 'n8n' }}",
+              "type": "string"
+            },
+            {
+              "id": "s3-bucket",
+              "name": "s3_bucket",
+              "value": "={{ $env.BACKUP_S3_BUCKET || 'lab-backups' }}",
+              "type": "string"
+            },
+            {
+              "id": "s3-key",
+              "name": "s3_key",
+              "value": "=n8n-backups/{{ $json.db_name }}_{{ $now.format('yyyy-MM-dd_HH-mm') }}.sql.gz",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "set-vars",
+      "name": "Build Backup Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [440, 300]
+    },
+    {
+      "parameters": {
+        "command": "=PGPASSWORD={{ $env.DB_POSTGRESDB_PASSWORD }} pg_dump -h {{ $json.db_host }} -U {{ $json.db_user }} {{ $json.db_name }} | gzip > /tmp/{{ $json.db_name }}_{{ $json.backup_timestamp }}.sql.gz && echo '{\"file\": \"/tmp/{{ $json.db_name }}_{{ $json.backup_timestamp }}.sql.gz\", \"status\": \"dump_complete\"}'"
+      },
+      "id": "exec-pgdump",
+      "name": "pg_dump → gzip",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [660, 300],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true },
+          "conditions": [
+            {
+              "id": "has-file",
+              "leftValue": "={{ $json.stdout }}",
+              "rightValue": "dump_complete",
+              "operator": { "type": "string", "operation": "contains" }
+            }
+          ]
+        }
+      },
+      "id": "if-dump-ok",
+      "name": "Dump OK?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [880, 300]
+    },
+    {
+      "parameters": {
+        "command": "=aws s3 cp /tmp/{{ $('Build Backup Config').item.json.db_name }}_{{ $('Build Backup Config').item.json.backup_timestamp }}.sql.gz s3://{{ $('Build Backup Config').item.json.s3_bucket }}/{{ $('Build Backup Config').item.json.s3_key }} && rm /tmp/{{ $('Build Backup Config').item.json.db_name }}_{{ $('Build Backup Config').item.json.backup_timestamp }}.sql.gz && echo '{\"status\": \"uploaded\", \"s3_key\": \"{{ $('Build Backup Config').item.json.s3_key }}\"}'"
+      },
+      "id": "upload-s3",
+      "name": "Upload to S3",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [1100, 200],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success",
+              "name": "result",
+              "value": "={{ $now.toISO() }} — ✅ Backup uploaded → s3://{{ $('Build Backup Config').item.json.s3_bucket }}/{{ $('Build Backup Config').item.json.s3_key }}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "log-success",
+      "name": "Log Success",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1320, 200]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fail",
+              "name": "result",
+              "value": "={{ $now.toISO() }} — 🔴 Backup FAILED: {{ $json.stderr || $json.stdout || 'unknown error' }}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "log-failure",
+      "name": "Log Failure",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1100, 420]
+    }
+  ],
+  "connections": {
+    "Daily at 2 AM": {
+      "main": [[{ "node": "Build Backup Config", "type": "main", "index": 0 }]]
+    },
+    "Build Backup Config": {
+      "main": [[{ "node": "pg_dump → gzip", "type": "main", "index": 0 }]]
+    },
+    "pg_dump → gzip": {
+      "main": [[{ "node": "Dump OK?", "type": "main", "index": 0 }]]
+    },
+    "Dump OK?": {
+      "main": [
+        [{ "node": "Upload to S3", "type": "main", "index": 0 }],
+        [{ "node": "Log Failure", "type": "main", "index": 0 }]
+      ]
+    },
+    "Upload to S3": {
+      "main": [[{ "node": "Log Success", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [{ "name": "backup" }, { "name": "database" }, { "name": "aws" }]
+}

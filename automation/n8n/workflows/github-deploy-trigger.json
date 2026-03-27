@@ -1,0 +1,179 @@
+{
+  "name": "🚀 GitHub Deploy Trigger",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "github-deploy",
+        "options": {
+          "responseMode": "responseNode"
+        }
+      },
+      "id": "webhook-trigger",
+      "name": "GitHub Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [220, 300],
+      "webhookId": "github-deploy"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true },
+          "conditions": [
+            {
+              "id": "is-push-main",
+              "leftValue": "={{ $json.body.ref }}",
+              "rightValue": "refs/heads/main",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ]
+        }
+      },
+      "id": "if-main-branch",
+      "name": "Is Main Branch?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [440, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "repo",
+              "name": "repository",
+              "value": "={{ $json.body.repository.full_name }}",
+              "type": "string"
+            },
+            {
+              "id": "commit",
+              "name": "commit_sha",
+              "value": "={{ $json.body.after }}",
+              "type": "string"
+            },
+            {
+              "id": "commit_msg",
+              "name": "commit_message",
+              "value": "={{ $json.body.head_commit.message }}",
+              "type": "string"
+            },
+            {
+              "id": "pusher",
+              "name": "pushed_by",
+              "value": "={{ $json.body.pusher.name }}",
+              "type": "string"
+            },
+            {
+              "id": "timestamp",
+              "name": "triggered_at",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "extract-metadata",
+      "name": "Extract Push Info",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [660, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.DEPLOY_WEBHOOK_URL || 'http://host.docker.internal:9000/hooks/deploy' }}",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "repository", "value": "={{ $json.repository }}" },
+            { "name": "commit_sha", "value": "={{ $json.commit_sha }}" },
+            { "name": "commit_message", "value": "={{ $json.commit_message }}" },
+            { "name": "triggered_by", "value": "n8n-github-webhook" }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "trigger-deploy",
+      "name": "Trigger Deployment",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [880, 200],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "log-entry",
+              "name": "log",
+              "value": "={{ $now.toISO() }} — Deploy triggered for {{ $('Extract Push Info').item.json.repository }}@{{ $('Extract Push Info').item.json.commit_sha.substring(0,7) }} by {{ $('Extract Push Info').item.json.pushed_by }}",
+              "type": "string"
+            },
+            {
+              "id": "deploy-result",
+              "name": "deploy_status",
+              "value": "={{ $json.statusCode === 200 ? '✅ Success' : '⚠️ Deploy endpoint returned ' + $json.statusCode }}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "log-deploy",
+      "name": "Log Result",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1100, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ status: 'ok', message: 'Deploy triggered', commit: $('Extract Push Info').item.json.commit_sha }) }}"
+      },
+      "id": "respond-ok",
+      "name": "Respond OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1320, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\"status\":\"skipped\",\"reason\":\"not main branch\"}",
+        "options": { "responseCode": 200 }
+      },
+      "id": "respond-skip",
+      "name": "Respond Skipped",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [660, 420]
+    }
+  ],
+  "connections": {
+    "GitHub Webhook": {
+      "main": [[{ "node": "Is Main Branch?", "type": "main", "index": 0 }]]
+    },
+    "Is Main Branch?": {
+      "main": [
+        [{ "node": "Extract Push Info", "type": "main", "index": 0 }],
+        [{ "node": "Respond Skipped", "type": "main", "index": 0 }]
+      ]
+    },
+    "Extract Push Info": {
+      "main": [[{ "node": "Trigger Deployment", "type": "main", "index": 0 }]]
+    },
+    "Trigger Deployment": {
+      "main": [[{ "node": "Log Result", "type": "main", "index": 0 }]]
+    },
+    "Log Result": {
+      "main": [[{ "node": "Respond OK", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [{ "name": "ci-cd" }, { "name": "github" }, { "name": "deploy" }]
+}

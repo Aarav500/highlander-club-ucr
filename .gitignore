@@ -7,6 +7,9 @@ node_modules/
 .env.production
 .env.*.local
 
+# Lab config (contains infra references — keep out of VCS)
+lab-config.yaml
+
 # Next.js
 .next/
 out/

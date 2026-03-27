@@ -1,0 +1,2 @@
+# Ignore real secrets — only .env.example is tracked
+.env

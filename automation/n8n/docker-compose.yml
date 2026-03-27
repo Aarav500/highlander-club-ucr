@@ -1,0 +1,66 @@
+# =============================================================================
+# n8n Automation — Docker Compose
+# =============================================================================
+# Usage:
+#   1. Copy .env.example → .env and fill in real values
+#   2. docker compose up -d
+#   3. Open http://localhost:5678 in your browser
+# =============================================================================
+
+services:
+  # ─── PostgreSQL (persistent storage for n8n) ───────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_POSTGRESDB_DATABASE:-n8n}
+      POSTGRES_USER: ${DB_POSTGRESDB_USER:-n8n}
+      POSTGRES_PASSWORD: ${DB_POSTGRESDB_PASSWORD:?Set DB_POSTGRESDB_PASSWORD in .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_POSTGRESDB_USER:-n8n}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── n8n Workflow Engine ────────────────────────────────────────────────
+  n8n:
+    image: n8nio/n8n:latest
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "${N8N_PORT:-5678}:5678"
+    environment:
+      # ── Core n8n settings ──
+      N8N_HOST: ${N8N_HOST:-localhost}
+      N8N_PORT: 5678
+      N8N_PROTOCOL: ${N8N_PROTOCOL:-http}
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:?Set N8N_ENCRYPTION_KEY in .env}
+      WEBHOOK_URL: ${WEBHOOK_URL:-http://localhost:5678/}
+
+      # ── Database ──
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: postgres
+      DB_POSTGRESDB_PORT: 5432
+      DB_POSTGRESDB_DATABASE: ${DB_POSTGRESDB_DATABASE:-n8n}
+      DB_POSTGRESDB_USER: ${DB_POSTGRESDB_USER:-n8n}
+      DB_POSTGRESDB_PASSWORD: ${DB_POSTGRESDB_PASSWORD:?required}
+
+      # ── Timezone ──
+      GENERIC_TIMEZONE: ${GENERIC_TIMEZONE:-America/Los_Angeles}
+      TZ: ${GENERIC_TIMEZONE:-America/Los_Angeles}
+
+      # ── Custom env vars (accessible as $env.VAR in workflows) ──
+      N8N_API_KEY: ${N8N_API_KEY:-}
+      MY_SERVICE_TOKEN: ${MY_SERVICE_TOKEN:-}
+    volumes:
+      - n8n_data:/home/node/.n8n
+
+volumes:
+  postgres_data:
+    driver: local
+  n8n_data:
+    driver: local

@@ -1,0 +1,130 @@
+{
+  "handoff": {
+    "id": "handoff-phase2-claude-001",
+    "timestamp": "2026-03-21T06:00:00Z",
+    "from": {
+      "agent": "antigravity",
+      "workflow": "new-production-app",
+      "phase": "Phase 1 — Foundation (COMPLETE)"
+    },
+    "to": {
+      "agent": "claude-code",
+      "workflow": "highlander-events",
+      "phase": "Phase 2 — Core Mobile Features"
+    },
+    "context": {
+      "app_slug": "highlander-events",
+      "app_name": "Highlander Events — UCR Club Events App",
+      "spec_path": "specs/highlander-events-spec.md",
+      "plan_path": "plans/highlander-events-plan.md",
+      "relevant_files": [
+        "apps/api-node/src/index.js",
+        "apps/api-node/src/routes/events.js",
+        "apps/api-node/src/routes/clubs.js",
+        "apps/api-node/src/routes/users.js",
+        "apps/api-node/src/routes/auth.js",
+        "apps/api-node/src/routes/search.js",
+        "apps/api-node/src/middleware/auth.js",
+        "apps/api-node/src/db/schema.sql",
+        "apps/mobile/app/(tabs)/index.tsx",
+        "apps/mobile/app/(tabs)/calendar.tsx",
+        "apps/mobile/app/(tabs)/search.tsx",
+        "apps/mobile/app/(tabs)/profile.tsx",
+        "apps/mobile/app/(auth)/login.tsx",
+        "apps/mobile/app/event/[id].tsx",
+        "apps/mobile/app/club/[id].tsx",
+        "apps/mobile/services/api.ts",
+        "apps/mobile/constants/Colors.ts"
+      ],
+      "decisions": [
+        "React Native + Expo with Expo Router (file-based routing)",
+        "Express + pg driver for backend (NOT TypeScript, plain JS)",
+        "Railway PostgreSQL for database — already migrated + seeded",
+        "JWT auth with @ucr.edu email verification",
+        "UCR brand colors: Blue #2D6CC0, Gold #F1AB00, dark mode default",
+        "TikTok-style vertical feed with FlatList pagingEnabled + snapToInterval",
+        "Event status: draft/published/cancelled (soft delete)",
+        "RSVP toggle with max_attendees enforcement",
+        "Feed algorithm: followed clubs first, then by recency + popularity",
+        "API runs on port 3001, mobile uses 10.0.2.2:3001 for Android emulator"
+      ],
+      "phase1_status": {
+        "backend_api": "COMPLETE — 23+ endpoints, 6 route groups, all working",
+        "database": "COMPLETE — 9 tables migrated + seeded on Railway (3 clubs, 10 events, 3 users)",
+        "mobile_scaffold": "COMPLETE — 8 screens created, Expo export verified (18 routes, 0 errors)",
+        "auth": "COMPLETE — login → code → verify → JWT tested and working"
+      }
+    },
+    "task": {
+      "description": "Wire up the mobile screens to the live backend API and polish the core user experience. The screens are already built but need end-to-end testing with real data. Focus on making the feed smooth, RSVP responsive, and search functional.",
+      "subtasks": [
+        {
+          "id": "2.1",
+          "title": "Wire Feed to Live API",
+          "description": "The feed screen (apps/mobile/app/(tabs)/index.tsx) already calls users.feed() and eventsApi.happeningNow(). Verify it renders real data from the API. Fix any rendering issues with the EventCard component. Ensure the vertical snapping is smooth at 60fps.",
+          "files": ["apps/mobile/app/(tabs)/index.tsx"]
+        },
+        {
+          "id": "2.2",
+          "title": "Test RSVP End-to-End",
+          "description": "RSVP toggle already calls eventsApi.rsvp(). Verify: tapping RSVP updates count immediately, the heart animation plays, max_attendees blocking works (API returns 409 when full). Test on both feed cards and event detail screen.",
+          "files": ["apps/mobile/app/(tabs)/index.tsx", "apps/mobile/app/event/[id].tsx"]
+        },
+        {
+          "id": "2.3",
+          "title": "Test Club Follow + Personalized Feed",
+          "description": "Follow toggle calls clubsApi.follow(). Verify: following a club moves its events to the top of the feed. Test the club detail screen renders upcoming events. Verify the follow button state persists.",
+          "files": ["apps/mobile/app/club/[id].tsx", "apps/mobile/app/(tabs)/index.tsx"]
+        },
+        {
+          "id": "2.4",
+          "title": "Wire Filters + Search",
+          "description": "Search screen calls searchApi.query(). Verify: keyword search returns events + clubs. Category pills filter correctly. Calendar screen loads events for selected date. Fix any TypeScript issues.",
+          "files": ["apps/mobile/app/(tabs)/search.tsx", "apps/mobile/app/(tabs)/calendar.tsx"]
+        },
+        {
+          "id": "2.5",
+          "title": "Wire Friend Activity",
+          "description": "Profile screen shows friends list. Verify: adding a friend by email works (usersApi.addFriend). 'X friends going' badge shows on feed cards (friends_going field). Friend activity screen loads.",
+          "files": ["apps/mobile/app/(tabs)/profile.tsx", "apps/mobile/app/(tabs)/index.tsx"]
+        }
+      ],
+      "acceptance_criteria": [
+        "Feed loads real events from API and displays in vertical snapping cards",
+        "RSVP toggle works end-to-end with animated feedback",
+        "Club follow/unfollow persists and affects feed ordering",
+        "Search returns matching events and clubs",
+        "Category filter pills work correctly",
+        "Calendar shows events for the selected date",
+        "Friend activity shows 'X friends going' on cards",
+        "No TypeScript errors (npx tsc --noEmit passes)",
+        "No console errors when running"
+      ],
+      "how_to_run": {
+        "api": "cd apps/api-node && npm run dev",
+        "mobile": "cd apps/mobile && npx expo start",
+        "test_api": "cd apps/api-node && npm test"
+      },
+      "constraints": [
+        "Do NOT modify backend API routes — they are tested and working",
+        "Keep the UCR dark theme (Colors.ts) — do not change brand colors",
+        "Keep the TikTok-style vertical feed — do not change to horizontal/grid",
+        "All API calls go through services/api.ts — do not use raw fetch",
+        "Follow the existing file structure (Expo Router file-based routing)"
+      ]
+    },
+    "artifacts": {
+      "inputs": [
+        "specs/highlander-events-spec.md",
+        "plans/highlander-events-plan.md",
+        "apps/mobile/services/api.ts",
+        "apps/mobile/constants/Colors.ts"
+      ],
+      "expected_outputs": [
+        "Updated mobile screens with working API integration",
+        "Any bug fixes to components or API calls",
+        "Screenshot or Expo log confirming feed renders real data"
+      ]
+    }
+  }
+}

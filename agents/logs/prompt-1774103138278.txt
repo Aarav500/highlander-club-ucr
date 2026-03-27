@@ -1,0 +1,23 @@
+You are working on the Highlander Events project.
+Working directory: C:\Users\aarav\Downloads\FullStack-Template-main
+
+TASK: Implement Phase 4 features: Club Dashboard (officer-only stats screen), Photo Gallery (S3 uploads + carousel), and Weekly Digest (push notification with top events)
+
+SUBTASKS:
+  1. [P4.1] Club Dashboard API Endpoints: Add GET /api/clubs/:id/dashboard endpoint (officer-only, check club_members role='admin'). Return: total event views (SUM events.views), total RSVPs (COUNT rsvps), follower count (COUNT follows), and per-event metrics (title, views, rsvp_count, date). Use existing auth + club admin middleware.
+  2. [P4.2] Photo Gallery API Endpoints: Add POST /api/events/:id/photos (upload to S3 using existing upload middleware, store URL in event_photos table), GET /api/events/:id/photos (list photos), DELETE /api/events/:id/photos/:photoId (admin only, delete from S3 + DB). The event_photos table already exists in the schema.
+  3. [P4.3] Weekly Digest Endpoint: Add GET /api/digest/weekly endpoint that returns top 5 events this week by RSVP count (SELECT events WHERE start_time BETWEEN now AND now+7days ORDER BY rsvp_count DESC LIMIT 5). Include title, club_name, rsvp_count, start_time, location.
+  4. [P4.4] Club Dashboard Mobile Screen: Create apps/mobile/app/club/[id]/dashboard.tsx — officer-only screen with: bar chart showing per-event RSVPs (use simple View bars with width proportional to count), total stats cards (views, RSVPs, followers), and a list of events with their metrics. Use the existing Colors.ts design system (dark theme, #0A0E1A bg, #F1AB00 gold accent, #141828 surface cards). Match premium style of other screens.
+  5. [P4.5] Photo Gallery Component: Add a photo gallery section to the existing event detail screen apps/mobile/app/event/[id].tsx. Fetch photos from /api/events/:id/photos and show them in a horizontal ScrollView carousel. Each photo card: 200x200 rounded corners, tap to view full size. If no photos, show 'No photos yet' placeholder. Use dark theme styling.
+
+CONSTRAINTS:
+  - Use existing auth middleware and club admin middleware
+  - Use existing S3 upload middleware for photo uploads
+  - Follow the dark theme design system in constants/Colors.ts
+  - All new screens must use StyleSheet.create, not inline styles
+  - Import from expo-linear-gradient for any gradient effects
+
+IMPORTANT: 
+- Read the relevant files before making changes.
+- Make the actual code changes directly.
+- When done, output a JSON summary: {"completed": [...subtask IDs completed], "issues": [...any problems]}

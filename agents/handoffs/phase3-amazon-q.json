@@ -1,0 +1,43 @@
+{
+  "handoff": {
+    "id": "handoff-phase3-amazonq-002",
+    "timestamp": "2026-03-21T09:21:00Z",
+    "from": { "agent": "antigravity", "phase": "Phase 2 COMPLETE" },
+    "to": { "agent": "amazon-q", "phase": "Phase 3 — Security Fixes" },
+    "task": {
+      "description": "Fix all HIGH and MEDIUM findings from agents/handoffs/phase2-security-report.md.",
+      "subtasks": [
+        {
+          "id": "S.1",
+          "title": "Fix SQL Injection (HIGH-1, HIGH-2)",
+          "description": "In apps/api-node/src/routes/events.js and clubs.js, replace all template literal SQL interpolation of req.user.id with parameterized queries ($1, $2, etc). Search for '${req.user' and replace every occurrence."
+        },
+        {
+          "id": "S.2",
+          "title": "Fix CORS (MED-1)",
+          "description": "In apps/api-node/src/index.js, replace app.use(cors()) with origin whitelist using process.env.ALLOWED_ORIGINS. Add ALLOWED_ORIGINS to .env.example."
+        },
+        {
+          "id": "S.3",
+          "title": "Fix JWT Secret (MED-3)",
+          "description": "In apps/api-node/src/middleware/auth.js, add a startup check that throws if JWT_SECRET is missing in production. Add JWT_SECRET=<your-secret-here> to .env.example."
+        },
+        {
+          "id": "S.4",
+          "title": "Add Rate Limiting (MED-4)",
+          "description": "In apps/api-node/src/index.js, apply express-rate-limit to /api/auth routes (max 10 per 15 min) and /api/upload routes (max 50 per 15 min). express-rate-limit is already in package.json."
+        },
+        {
+          "id": "S.5",
+          "title": "Clean .env.example (CRIT-1)",
+          "description": "Replace ALL real credential values in .env.example with placeholder text like <your-key-here>. Do NOT modify .env itself."
+        }
+      ],
+      "constraints": [
+        "Do NOT break any existing endpoint behavior",
+        "Test that the API still starts: node src/index.js",
+        "Only modify backend files in apps/api-node/"
+      ]
+    }
+  }
+}

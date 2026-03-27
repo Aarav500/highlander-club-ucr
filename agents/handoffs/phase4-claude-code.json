@@ -1,0 +1,55 @@
+{
+  "handoff": {
+    "id": "handoff-phase4-claude-001",
+    "from": { "agent": "antigravity", "role": "orchestrator" },
+    "to": { "agent": "claude-code", "phase": "4" },
+    "context": {
+      "app_name": "Highlander Events",
+      "app_slug": "highlander-events",
+      "tech_stack": ["Node.js", "Express", "PostgreSQL", "React Native", "Expo"],
+      "working_dir": "c:\\Users\\aarav\\Downloads\\FullStack-Template-main"
+    },
+    "task": {
+      "description": "Implement Phase 4 features: Club Dashboard (officer-only stats screen), Photo Gallery (S3 uploads + carousel), and Weekly Digest (push notification with top events)",
+      "subtasks": [
+        {
+          "id": "P4.1",
+          "title": "Club Dashboard API Endpoints",
+          "description": "Add GET /api/clubs/:id/dashboard endpoint (officer-only, check club_members role='admin'). Return: total event views (SUM events.views), total RSVPs (COUNT rsvps), follower count (COUNT follows), and per-event metrics (title, views, rsvp_count, date). Use existing auth + club admin middleware.",
+          "files": ["apps/api-node/src/routes/clubs.js"]
+        },
+        {
+          "id": "P4.2",
+          "title": "Photo Gallery API Endpoints",
+          "description": "Add POST /api/events/:id/photos (upload to S3 using existing upload middleware, store URL in event_photos table), GET /api/events/:id/photos (list photos), DELETE /api/events/:id/photos/:photoId (admin only, delete from S3 + DB). The event_photos table already exists in the schema.",
+          "files": ["apps/api-node/src/routes/events.js", "apps/api-node/src/middleware/upload.js"]
+        },
+        {
+          "id": "P4.3",
+          "title": "Weekly Digest Endpoint",
+          "description": "Add GET /api/digest/weekly endpoint that returns top 5 events this week by RSVP count (SELECT events WHERE start_time BETWEEN now AND now+7days ORDER BY rsvp_count DESC LIMIT 5). Include title, club_name, rsvp_count, start_time, location.",
+          "files": ["apps/api-node/src/routes/events.js"]
+        },
+        {
+          "id": "P4.4",
+          "title": "Club Dashboard Mobile Screen",
+          "description": "Create apps/mobile/app/club/[id]/dashboard.tsx — officer-only screen with: bar chart showing per-event RSVPs (use simple View bars with width proportional to count), total stats cards (views, RSVPs, followers), and a list of events with their metrics. Use the existing Colors.ts design system (dark theme, #0A0E1A bg, #F1AB00 gold accent, #141828 surface cards). Match premium style of other screens.",
+          "files": ["apps/mobile/app/club/[id]/dashboard.tsx"]
+        },
+        {
+          "id": "P4.5",
+          "title": "Photo Gallery Component",
+          "description": "Add a photo gallery section to the existing event detail screen apps/mobile/app/event/[id].tsx. Fetch photos from /api/events/:id/photos and show them in a horizontal ScrollView carousel. Each photo card: 200x200 rounded corners, tap to view full size. If no photos, show 'No photos yet' placeholder. Use dark theme styling.",
+          "files": ["apps/mobile/app/event/[id].tsx"]
+        }
+      ],
+      "constraints": [
+        "Use existing auth middleware and club admin middleware",
+        "Use existing S3 upload middleware for photo uploads", 
+        "Follow the dark theme design system in constants/Colors.ts",
+        "All new screens must use StyleSheet.create, not inline styles",
+        "Import from expo-linear-gradient for any gradient effects"
+      ]
+    }
+  }
+}

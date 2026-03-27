@@ -1,0 +1,180 @@
+{
+  "name": "🔔 Error Alert Notifier",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "error-alert",
+        "options": {
+          "responseMode": "responseNode"
+        }
+      },
+      "id": "webhook-trigger",
+      "name": "Error Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [220, 300],
+      "webhookId": "error-alert"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "severity",
+              "name": "severity",
+              "value": "={{ $json.body.severity || 'error' }}",
+              "type": "string"
+            },
+            {
+              "id": "service",
+              "name": "service",
+              "value": "={{ $json.body.service || 'unknown' }}",
+              "type": "string"
+            },
+            {
+              "id": "message",
+              "name": "message",
+              "value": "={{ $json.body.message || 'No message provided' }}",
+              "type": "string"
+            },
+            {
+              "id": "trace_id",
+              "name": "trace_id",
+              "value": "={{ $json.body.trace_id || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "timestamp",
+              "name": "received_at",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            },
+            {
+              "id": "emoji",
+              "name": "severity_icon",
+              "value": "={{ { critical: '🚨', error: '🔴', warning: '🟡', info: 'ℹ️' }[$json.body.severity] || '🔴' }}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "normalize-alert",
+      "name": "Normalize Alert",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [440, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true },
+          "conditions": [
+            {
+              "id": "is-critical",
+              "leftValue": "={{ $json.severity }}",
+              "rightValue": "critical",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ]
+        }
+      },
+      "id": "if-critical",
+      "name": "Is Critical?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [660, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.SLACK_WEBHOOK_URL }}",
+        "method": "POST",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"text\": \"{{ $json.severity_icon }} *{{ $json.severity.toUpperCase() }}* — {{ $json.service }}\",\n  \"blocks\": [\n    {\n      \"type\": \"header\",\n      \"text\": { \"type\": \"plain_text\", \"text\": \"{{ $json.severity_icon }} {{ $json.severity.toUpperCase() }}: {{ $json.service }}\" }\n    },\n    {\n      \"type\": \"section\",\n      \"fields\": [\n        { \"type\": \"mrkdwn\", \"text\": \"*Message:*\\n{{ $json.message }}\" },\n        { \"type\": \"mrkdwn\", \"text\": \"*Time:*\\n{{ $json.received_at }}\" },\n        { \"type\": \"mrkdwn\", \"text\": \"*Trace:*\\n`{{ $json.trace_id || 'n/a' }}`\" }\n      ]\n    }\n  ]\n}",
+        "options": { "timeout": 10000 }
+      },
+      "id": "slack-critical",
+      "name": "Slack (Critical)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [880, 200],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $env.ALERT_FROM_EMAIL || 'alerts@lab.local' }}",
+        "toEmail": "={{ $env.ALERT_TO_EMAIL || 'admin@lab.local' }}",
+        "subject": "={{ $json.severity_icon }} [{{ $json.severity.toUpperCase() }}] {{ $json.service }} — {{ $json.message.substring(0, 80) }}",
+        "emailType": "text",
+        "message": "=Service: {{ $json.service }}\nSeverity: {{ $json.severity }}\nTime: {{ $json.received_at }}\nTrace ID: {{ $json.trace_id || 'n/a' }}\n\nMessage:\n{{ $json.message }}"
+      },
+      "id": "email-critical",
+      "name": "Email (Critical)",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [880, 360],
+      "continueOnFail": true,
+      "credentials": {
+        "smtp": { "id": "smtp-cred", "name": "Lab SMTP" }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.SLACK_WEBHOOK_URL }}",
+        "method": "POST",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"text\": \"{{ $json.severity_icon }} *{{ $json.severity }}* — {{ $json.service }}: {{ $json.message.substring(0, 200) }}\"\n}",
+        "options": { "timeout": 10000 }
+      },
+      "id": "slack-normal",
+      "name": "Slack (Normal)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [880, 500],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ status: 'processed', severity: $('Normalize Alert').item.json.severity }) }}"
+      },
+      "id": "respond-ok",
+      "name": "Respond OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1100, 300]
+    }
+  ],
+  "connections": {
+    "Error Webhook": {
+      "main": [[{ "node": "Normalize Alert", "type": "main", "index": 0 }]]
+    },
+    "Normalize Alert": {
+      "main": [[{ "node": "Is Critical?", "type": "main", "index": 0 }]]
+    },
+    "Is Critical?": {
+      "main": [
+        [
+          { "node": "Slack (Critical)", "type": "main", "index": 0 },
+          { "node": "Email (Critical)", "type": "main", "index": 0 }
+        ],
+        [{ "node": "Slack (Normal)", "type": "main", "index": 0 }]
+      ]
+    },
+    "Slack (Critical)": {
+      "main": [[{ "node": "Respond OK", "type": "main", "index": 0 }]]
+    },
+    "Email (Critical)": {
+      "main": [[{ "node": "Respond OK", "type": "main", "index": 0 }]]
+    },
+    "Slack (Normal)": {
+      "main": [[{ "node": "Respond OK", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [{ "name": "alerting" }, { "name": "slack" }, { "name": "email" }]
+}

@@ -1,0 +1,103 @@
+{
+  "handoff": {
+    "id": "handoff-phase2-amazonq-001",
+    "timestamp": "2026-03-21T06:00:00Z",
+    "from": {
+      "agent": "antigravity",
+      "workflow": "new-production-app",
+      "phase": "Phase 1 — Foundation (COMPLETE)"
+    },
+    "to": {
+      "agent": "amazon-q",
+      "workflow": "highlander-events",
+      "phase": "Phase 2 — AWS Infrastructure + Security"
+    },
+    "context": {
+      "app_slug": "highlander-events",
+      "app_name": "Highlander Events — UCR Club Events App",
+      "spec_path": "specs/highlander-events-spec.md",
+      "plan_path": "plans/highlander-events-plan.md",
+      "relevant_files": [
+        "apps/api-node/src/index.js",
+        "apps/api-node/src/routes/events.js",
+        "apps/api-node/src/middleware/auth.js",
+        "apps/api-node/package.json",
+        ".env.example",
+        ".env",
+        "lab-config.yaml"
+      ],
+      "decisions": [
+        "S3 for image/video storage (event images, club logos, gallery photos)",
+        "AWS credentials already configured in .env (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION)",
+        "multer + @aws-sdk/client-s3 already in package.json dependencies",
+        "Express backend on port 3001",
+        "JWT auth — tokens must be validated on all protected routes"
+      ],
+      "aws_setup": {
+        "region": "us-east-1",
+        "services_needed": ["S3"],
+        "credentials": "Already in .env — AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY"
+      }
+    },
+    "task": {
+      "description": "Set up the AWS S3 integration for image uploads and perform a security review of the backend API.",
+      "subtasks": [
+        {
+          "id": "A.1",
+          "title": "Create S3 Bucket for Media",
+          "description": "Create an S3 bucket named 'highlander-events-media' (or similar) in us-east-1. Configure CORS for mobile uploads. Set up bucket policy for public read access on uploaded images. Add the bucket name to .env as S3_BUCKET.",
+          "files": [".env", ".env.example"]
+        },
+        {
+          "id": "A.2",
+          "title": "Implement S3 Upload Middleware",
+          "description": "Create apps/api-node/src/middleware/upload.js using multer-s3 and @aws-sdk/client-s3. Support image uploads (JPEG, PNG, WebP) up to 10MB. Generate unique S3 keys with UUID. Return the public URL. Wire it into POST /api/events and POST /api/clubs for image_url uploads.",
+          "files": ["apps/api-node/src/middleware/upload.js", "apps/api-node/src/routes/events.js", "apps/api-node/src/routes/clubs.js"]
+        },
+        {
+          "id": "A.3",
+          "title": "Security Review",
+          "description": "Review the backend code for OWASP Top 10 vulnerabilities. Check: SQL injection (parameterized queries), auth bypass, rate limiting, input validation, CORS configuration, JWT secret strength, error message leakage. Create a findings report at agents/handoffs/phase2-security-report.md.",
+          "files": ["apps/api-node/src/routes/*.js", "apps/api-node/src/middleware/auth.js"]
+        },
+        {
+          "id": "A.4",
+          "title": "Add Presigned URL Endpoint (Optional)",
+          "description": "If direct S3 upload from mobile is preferred, create GET /api/upload/presign that returns a presigned S3 PUT URL. This allows the mobile app to upload directly to S3 without proxying through the API server.",
+          "files": ["apps/api-node/src/routes/upload.js"]
+        }
+      ],
+      "acceptance_criteria": [
+        "S3 bucket created and accessible",
+        "Image upload endpoint works (POST multipart/form-data → S3 URL returned)",
+        "S3 bucket name added to .env and .env.example",
+        "Security report generated with any findings + recommendations",
+        "No high-severity security issues in API code",
+        "CORS configured correctly on S3 bucket"
+      ],
+      "how_to_run": {
+        "api": "cd apps/api-node && npm run dev",
+        "test_upload": "curl -X POST -F 'image=@test.jpg' http://localhost:3001/api/events -H 'Authorization: Bearer <token>'"
+      },
+      "constraints": [
+        "Use existing AWS credentials from .env",
+        "Do NOT change the database schema",
+        "Do NOT modify the auth flow — JWT is working",
+        "Keep S3 bucket in us-east-1 to match existing AWS config",
+        "Follow the lab's security standards from CLAUDE.md"
+      ]
+    },
+    "artifacts": {
+      "inputs": [
+        "specs/highlander-events-spec.md",
+        ".env.example",
+        "apps/api-node/package.json"
+      ],
+      "expected_outputs": [
+        "apps/api-node/src/middleware/upload.js",
+        "agents/handoffs/phase2-security-report.md",
+        "Updated .env and .env.example with S3_BUCKET"
+      ]
+    }
+  }
+}

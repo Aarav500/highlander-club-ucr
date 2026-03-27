@@ -1,0 +1,147 @@
+{
+  "name": "🏥 Health Check Monitor",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "minutes", "minutesInterval": 5 }]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Every 5 Minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [220, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.APP_BASE_URL || 'http://host.docker.internal:3000' }}/api/health",
+        "options": {
+          "timeout": 10000,
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "id": "http-api-health",
+      "name": "Check API Health",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 200],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.APP_BASE_URL || 'http://host.docker.internal:3000' }}",
+        "options": {
+          "timeout": 10000,
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "id": "http-web-health",
+      "name": "Check Web Frontend",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 400],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "" },
+          "conditions": [
+            {
+              "id": "api-down",
+              "leftValue": "={{ $('Check API Health').item.json.statusCode }}",
+              "rightValue": 200,
+              "operator": { "type": "number", "operation": "notEquals" }
+            }
+          ],
+          "combinator": "or"
+        }
+      },
+      "id": "if-unhealthy",
+      "name": "Is Down?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [660, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "status",
+              "name": "status",
+              "value": "={{ $('Check API Health').item.json.statusCode === 200 ? '✅ Healthy' : '🔴 DOWN' }}",
+              "type": "string"
+            },
+            {
+              "id": "timestamp",
+              "name": "checked_at",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            },
+            {
+              "id": "api_code",
+              "name": "api_status_code",
+              "value": "={{ $('Check API Health').item.json.statusCode }}",
+              "type": "number"
+            },
+            {
+              "id": "web_code",
+              "name": "web_status_code",
+              "value": "={{ $('Check Web Frontend').item.json.statusCode }}",
+              "type": "number"
+            }
+          ]
+        }
+      },
+      "id": "set-alert",
+      "name": "Build Alert Payload",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [880, 200]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "log",
+              "name": "log",
+              "value": "={{ $now.toISO() }} — All services healthy (API={{ $('Check API Health').item.json.statusCode }}, Web={{ $('Check Web Frontend').item.json.statusCode }})",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "set-ok",
+      "name": "Log OK",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [880, 400]
+    }
+  ],
+  "connections": {
+    "Every 5 Minutes": {
+      "main": [
+        [
+          { "node": "Check API Health", "type": "main", "index": 0 },
+          { "node": "Check Web Frontend", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Check API Health": {
+      "main": [[{ "node": "Is Down?", "type": "main", "index": 0 }]]
+    },
+    "Is Down?": {
+      "main": [
+        [{ "node": "Build Alert Payload", "type": "main", "index": 0 }],
+        [{ "node": "Log OK", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [{ "name": "monitoring" }, { "name": "health-check" }]
+}

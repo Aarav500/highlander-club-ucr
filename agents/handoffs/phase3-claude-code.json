@@ -1,0 +1,33 @@
+{
+  "handoff": {
+    "id": "handoff-phase3-claude-002",
+    "timestamp": "2026-03-21T09:21:00Z",
+    "from": { "agent": "antigravity", "phase": "Phase 2 COMPLETE" },
+    "to": { "agent": "claude-code", "phase": "Phase 3 — Enhanced Mobile" },
+    "task": {
+      "description": "Implement push notifications, deep link sharing, and campus map placeholder improvements.",
+      "subtasks": [
+        {
+          "id": "3.1",
+          "title": "Push Notifications Setup",
+          "description": "Install expo-notifications. Create apps/mobile/services/notifications.ts that: requests permission, gets Expo push token, registers it via POST /api/notifications/register, and handles notification tap to navigate to event detail via deep link. Wire it into app/_layout.tsx on app startup."
+        },
+        {
+          "id": "3.2",
+          "title": "Deep Link Share",
+          "description": "The Share button in event/[id].tsx already does Share.share(). Now add a share button on each feed card in index.tsx. Also update app/_layout.tsx to handle incoming deep links: when the app opens via highlanderevents://event/:id, navigate to that event."
+        },
+        {
+          "id": "3.3",
+          "title": "Improve Happening Now Banner",
+          "description": "Make the Happening Now cards in the feed tappable — onPress should navigate to the event detail. Add a pulsing animation to the green live dot."
+        }
+      ],
+      "constraints": [
+        "Use expo-notifications (install with: npx expo install expo-notifications)",
+        "Do NOT modify backend routes — they are working",
+        "Keep the UCR dark theme"
+      ]
+    }
+  }
+}
