@@ -1,0 +1,61 @@
+name: Deploy API to Railway
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/api-node/**'
+      - '.github/workflows/deploy-api.yml'
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  deploy:
+    name: Deploy API to Railway
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: apps/api-node/package-lock.json
+
+      - name: Install dependencies
+        working-directory: apps/api-node
+        run: npm ci
+
+      - name: Run linting
+        working-directory: apps/api-node
+        run: npm run lint --if-present
+
+      - name: Run tests
+        working-directory: apps/api-node
+        run: npm test --if-present
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          NODE_ENV: test
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Deploy to Railway
+        working-directory: apps/api-node
+        run: railway up --service api-node
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: Verify deployment
+        run: |
+          echo "⏳ Waiting for deployment to stabilize..."
+          sleep 30
+          echo "✅ API deployed to Railway"
+          echo "🔗 Check Railway dashboard for live URL"
