@@ -1,6 +1,6 @@
 # Highlander Events — App Perfection Design Spec
 **Date:** 2026-03-29
-**Status:** Approved
+**Status:** Approved (rev 2 — spec review fixes applied)
 **Scope:** Mobile app (`apps/mobile`) — frontend only, no backend changes required
 
 ---
@@ -17,18 +17,45 @@ Three confirmed gaps in the mobile frontend prevent the app from being productio
 
 ---
 
+## New Dependencies
+
+The following packages must be added to `apps/mobile/package.json` before implementation:
+
+| Package | Purpose |
+|---------|---------|
+| `expo-haptics` | Haptic feedback on feed card settle |
+| `@react-native-community/datetimepicker` | Native date/time pickers in Create Event form |
+
+> `expo-haptics` is an Expo-maintained package compatible with SDK 55. `@react-native-community/datetimepicker` is the standard React Native date picker used with Expo managed workflow.
+
+Also, `apps/mobile/services/api.ts` must be updated to add:
+
+```typescript
+upload: {
+  getPresignedUrl: (contentType: string) =>
+    request(`/api/upload/presign?contentType=${encodeURIComponent(contentType)}`),
+}
+```
+
+This wraps the existing `GET /api/upload/presign` backend endpoint (already implemented in `apps/api-node`).
+
+---
+
 ## Area 1: Create Event Screen
 
 ### File
 `apps/mobile/app/create-event.tsx` — modal presentation
 
 ### Navigation Entry Points
-- Admin panel "Create Event" button → `router.push('/create-event?clubId=...')`
-- Admin panel Events tab, per-event "Edit" button → `router.push('/create-event?clubId=...&eventId=...')`
+- Admin panel "Create Event" button → `router.push('/create-event?clubId=' + (id as string))`
+  where `id` is read from `useLocalSearchParams()` in `admin-panel/[id].tsx` and cast to `string`
+- Admin panel Events tab, per-event "Edit" button → `router.push('/create-event?clubId=' + (id as string) + '&eventId=' + event.id)`
 
 ### Mode Detection
-- If `eventId` param is present: prefill form via `eventsApi.get(eventId)`, submit calls `eventsApi.update()`
-- If no `eventId`: empty form, submit calls `eventsApi.create()`
+- Read `clubId` and `eventId` from `useLocalSearchParams()`. Both must be cast: `const clubId = params.clubId as string`
+- If `eventId` is present: prefill form via `eventsApi.get(eventId)` on mount, submit calls `eventsApi.update(eventId, data)`
+  - **Side effect accepted:** `GET /api/events/:id` increments the views counter. This is a known backend behavior and acceptable for now.
+- If no `eventId`: empty form, submit calls `eventsApi.create({ ...data, club_id: clubId })`
 
 ### Form Fields (maps directly to `POST /api/events` schema)
 
@@ -38,27 +65,32 @@ Three confirmed gaps in the mobile frontend prevent the app from being productio
 - Description (multiline text area, optional)
 
 **Step 2 — Date & Time**
-- Start date + time (native `DateTimePicker`)
-- End date + time (native `DateTimePicker`)
-- Validation: end must be after start
+- Start date + time (`DateTimePicker` from `@react-native-community/datetimepicker`)
+- End date + time (`DateTimePicker`)
+- Client-side validation: end must be after start; show inline error if not
 
 **Step 3 — Location**
 - Location name (text input, e.g. "HUB 302", optional)
-- Lat/lng: tap UCR campus map to drop pin (optional, reuses existing Leaflet map component)
+- Lat/lng: tap UCR campus map to drop pin (optional, reuses existing Leaflet map component from `map.tsx`)
 
 **Step 4 — Media & Details**
-- Cover image (ImagePicker → S3 presigned upload via existing `uploadApi.getPresignedUrl()` flow)
+- Cover image: `ImagePicker.launchImageLibraryAsync()` → call `uploadApi.getPresignedUrl('image/jpeg')` → `fetch(uploadUrl, { method: 'PUT', body: imageBlob })` → store `publicUrl` as `image_url` in form state
 - Max attendees (number input, optional)
 - Ticket type toggle: Free / Paid (if Paid, price field appears)
-- Status toggle: Publish Now / Save as Draft
+- Status toggle: **Publish Now** / **Save as Draft**
+  - Draft events are only visible in the admin panel Events tab (not on the public feed, which filters to `status = 'published'` only). Officers can open the admin panel Events tab to find and edit their drafts.
 
 ### Submission
-- `POST /api/events` with `club_id` from route param
+- `POST /api/events` (create) or `PUT /api/events/:id` (edit) with `club_id` from route param
 - On success: `router.back()` to admin panel
-- On error: inline error message below submit button
+- Error handling:
+  - **400** — show inline form error "Please fill in all required fields"
+  - **403** — show modal alert "You don't have permission to post events for this club" (this is the guard: the screen is only reachable from the admin panel, which is itself gated, but 403 handles any bypass)
+  - **413** — show inline error "Image is too large. Try a smaller photo."
+  - **5xx** — show inline error "Something went wrong. Please try again."
 
 ### Authorization
-Backend already enforces club admin check (president, vice_president, officer). Frontend shows the Create Event button only when `userRole` is one of those three roles (same logic already used for admin panel visibility in `club/[id].tsx`).
+The Create Event screen is exclusively reachable from the admin panel, which already enforces that the user is a club admin (president, vice_president, or officer). The backend enforces the same check and returns 403 for unauthorized attempts. No additional client-side role check is needed inside `create-event.tsx` — the 403 error handler above is the safety net.
 
 ---
 
@@ -67,48 +99,86 @@ Backend already enforces club admin check (president, vice_president, officer). 
 ### File Modified
 `apps/mobile/app/(tabs)/index.tsx`
 
-### FlatList Changes
+### New Dependency
+`expo-haptics` — import as `import * as Haptics from 'expo-haptics'`
+
+### Feed Architecture — Android-Safe Approach
+
+**The "Happening Now" banner must NOT use `ListHeaderComponent`** — `pagingEnabled` on Android does not account for `ListHeaderComponent` height when calculating page snap boundaries, causing the first card to land mid-screen.
+
+Instead:
+```
+<View style={{ flex: 1 }}>
+  <HappeningNowBanner />              {/* fixed height, outside FlatList */}
+  <FlatList
+    data={feedEvents}
+    pagingEnabled
+    snapToAlignment="start"
+    decelerationRate="fast"
+    showsVerticalScrollIndicator={false}
+    keyExtractor={...}
+    renderItem={renderCard}
+    onMomentumScrollEnd={handleSettle}
+  />
+</View>
+```
+
+Card height = `SCREEN_HEIGHT - HAPPENING_NOW_BANNER_HEIGHT` where `HAPPENING_NOW_BANNER_HEIGHT` is a constant (measure the banner height, e.g. 110) so that exactly one card fills the remaining screen per page.
+
+> If the "Happening Now" row has no current events, it renders at height 0 and card height equals `SCREEN_HEIGHT`. Use `onLayout` or a fixed constant to handle this gracefully.
+
+### FlatList Props
 ```
 pagingEnabled: true
 snapToAlignment: 'start'
 decelerationRate: 'fast'
 showsVerticalScrollIndicator: false
-Card height: SCREEN_HEIGHT (100% — replaces current SCREEN_HEIGHT * 0.65)
+Card height: SCREEN_HEIGHT - HAPPENING_NOW_BANNER_HEIGHT
 Card marginBottom: 0 (removed)
 ```
 
 ### Full-Screen Card Layout
 Cards use absolute positioning to layer content over the event image:
 
-**Background:** Event image fills entire card (`resizeMode: 'cover'`), fallback to placeholder with event icon
+**Background:** Event image fills entire card (`resizeMode: 'cover'`), fallback placeholder with event icon
 
 **Top strip:**
 - Category pill (colored background, top-left)
-- Countdown timer "Starts in 2h 30m" (top-right) — or "LIVE" pulsing badge if happening now
+- Countdown timer "Starts in 2h 30m" (top-right), or pulsing "LIVE" badge if happening now
 
-**Right rail** (fixed vertical column, right edge, Instagram Reels style):
-- ❤️ RSVP button + RSVP count — heart fill animation on tap (existing logic reused)
-- 📅 Save to calendar icon
-- ↗️ Share icon (calls existing `Share.share()`)
-- 👥 Friends count icon (shown only if friends are attending)
+**Right rail** (fixed vertical column, right edge):
+- ❤️ RSVP button + count — heart fill animation on tap (existing logic reused)
+- 📅 Calendar tab shortcut — tapping navigates to the Calendar tab (`router.push('/(tabs)/calendar')`), NOT device system calendar (avoids `expo-calendar` dependency)
+- ↗️ Share icon — calls existing `Share.share()` with event deep link
+- 👥 Friends going count — shown only for the **currently visible card**, fetched lazily via `onViewableItemsChanged` (calls `eventsApi.friends(id)` for the single visible event ID). Hidden on other cards until they become visible. Shows "0 friends" state as hidden (not rendered).
 
-**Bottom overlay** (gradient from transparent → `rgba(0,0,0,0.85)`, starts at 55% of card height):
+**Bottom overlay** (gradient from transparent → `rgba(0,0,0,0.85)`, starts at 55% card height):
 - Club avatar circle + club name (tappable → `/club/{id}`)
 - Event title (large, bold, white)
 - Date · Location line (small, muted white)
 - Attendee avatar stack + count
 
-**Swipe hint:** Up-arrow chevron at bottom center, fades out after first swipe (`AsyncStorage` flag)
+### Swipe Hint
+- Up-arrow chevron at bottom center of first card
+- AsyncStorage key: `@highlander/feed_swipe_hint_shown`
+- On app launch, read this key; if not set, show hint. On first `onMomentumScrollEnd`, set key to `'true'` and fade out hint with `Animated.timing`
 
 ### Haptics
 `Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)` called in `onMomentumScrollEnd`
 
-### Header Sections (above feed)
-- "Happening Now" horizontal scroll row: retained as sticky header pinned above the `FlatList`
-- "Recommended For You" carousel: **removed** from header — recommended events are injected inline into the feed list and flagged with a ✨ sparkle on their category pill
+### Recommended Events — Inline Injection
+Remove the "Recommended For You" `ListHeaderComponent` carousel entirely.
 
-### No New Dependencies
-`expo-haptics` is already in the Expo SDK; `pagingEnabled` is a native `FlatList` prop.
+Inject recommended events inline into the feed list using the following rule:
+- Fetch both `eventsApi.list()` (chronological) and `eventsApi.recommended()` in parallel
+- Build combined feed array: insert one recommended event every 5 chronological events (indices 4, 9, 14...), deduplicated by `event.id`
+- Recommended events get `isRecommended: true` flag on their card data → renders a ✨ sparkle overlay on the category pill
+
+### Skeleton Loading
+While feed data loads (before first API response), render 3 skeleton cards:
+- Gray animated gradient blocks (using `Animated.loop` + `Animated.timing` for shimmer)
+- Same dimensions as real cards (SCREEN_HEIGHT - HAPPENING_NOW_BANNER_HEIGHT)
+- No interaction
 
 ---
 
@@ -117,27 +187,36 @@ Cards use absolute positioning to layer content over the event image:
 ### Admin Panel (`apps/mobile/app/admin-panel/[id].tsx`)
 
 **Fix 1 — Create Event navigation:**
-```
-Before: router.push(`/club-dashboard/${id}`)
-After:  router.push(`/create-event?clubId=${id}`)
+```typescript
+// Before:
+router.push(`/club-dashboard/${id}`)
+
+// After (id comes from useLocalSearchParams(), already cast as string):
+router.push(`/create-event?clubId=${id as string}`)
 ```
 
 **Fix 2 — Events tab:**
-- Fetch and display the club's own events via `eventsApi.list({ clubId: id })`
-- Each event row has an "Edit" button → `router.push('/create-event?clubId=${id}&eventId=${event.id}')`
-- Replace the current placeholder navigation with the actual event list
+- Fetch club's events on tab focus: `eventsApi.list({ clubId: id as string, status: 'all' })` — include drafts
+  - Note: backend `GET /api/events` accepts a `clubId` filter param; add `status: 'all'` or omit status filter when fetching for admin view (may need backend to accept `status=all` param — if not, fetch both `published` and `draft` separately and merge)
+  - **Alternative if backend doesn't support `status=all`:** fetch `clubsApi.get(id)` which returns `upcoming_events` array; for admin purposes this is sufficient for now
+- Each event row shows: title, date, status badge (Published / Draft), RSVP count
+- "Edit" button per row → `router.push('/create-event?clubId=${id as string}&eventId=${event.id}')`
+- "Create Event" button at top of tab → `router.push('/create-event?clubId=${id as string}')`
 
 ### Profile Screen (`apps/mobile/app/(tabs)/profile.tsx`)
-- "My Events" tab: each event card becomes tappable → `router.push('/event/${event.id}')`
-- Currently cards render event data but are not wrapped in a `Pressable`
+- "My Events" tab: wrap each event card in `<Pressable onPress={() => router.push('/event/' + event.id)}>`
+- Add `activeOpacity` visual feedback on press
 
 ### Feed Screen Polish
-- Remove "Recommended For You" section header (now inline)
-- Remove `marginBottom` from cards
+- Remove `ListHeaderComponent` "Recommended For You" carousel (replaced by inline injection above)
+- Remove `marginBottom` from event cards
+- Skeleton loading on initial load (see Area 2)
 
-### General
-- All modal screens: verify `router.back()` works correctly on dismiss
-- Feed: replace blank flash on initial load with skeleton placeholder cards (3 gray animated cards while data loads)
+### Root Layout (`apps/mobile/app/_layout.tsx`)
+Add `create-event` to the stack navigator:
+```typescript
+<Stack.Screen name="create-event" options={{ presentation: 'modal', title: 'Create Event' }} />
+```
 
 ---
 
@@ -150,21 +229,23 @@ After:  router.push(`/create-event?clubId=${id}`)
 | `app/admin-panel/[id].tsx` | **Modified** — nav fix, events tab, edit buttons |
 | `app/(tabs)/profile.tsx` | **Modified** — tappable event cards |
 | `app/_layout.tsx` | **Modified** — add `create-event` to stack navigator |
-
-## Files NOT Changed
-- All backend files (`apps/api-node/`) — no changes needed
-- `services/api.ts` — all required functions already exist
-- `services/notifications.ts` — no changes needed
-- `constants/Colors.ts` — no changes needed
-- All other screens — no changes needed
+| `services/api.ts` | **Modified** — add `upload.getPresignedUrl()` function |
+| `package.json` | **Modified** — add `expo-haptics`, `@react-native-community/datetimepicker` |
 
 ---
 
 ## Success Criteria
 
-- [ ] Club officer can open admin panel, tap "Create Event", fill form, and see new event appear on the feed
-- [ ] Feed swipes full-screen — one card per swipe, haptic on settle
-- [ ] Recommended events appear inline in feed with ✨ badge, not as separate carousel
-- [ ] Profile "My Events" cards are tappable
-- [ ] Admin panel Events tab shows club's real events with Edit buttons
+- [ ] `expo-haptics` and `@react-native-community/datetimepicker` installed and importable
+- [ ] `uploadApi.getPresignedUrl()` exists in `api.ts`
+- [ ] Club officer can open admin panel → "Create Event" → fill form → event appears on feed
+- [ ] Club officer can open admin panel → Events tab → tap "Edit" on an event → form prefills
+- [ ] Draft events visible in admin panel Events tab, not on public feed
+- [ ] Feed swipes full-screen on both iOS and Android — one card per swipe, haptic on settle
+- [ ] "Happening Now" banner stays pinned above feed, does not interfere with snap
+- [ ] Recommended events appear inline in feed (every 5th card) with ✨ badge
+- [ ] Friends count shown only for currently visible card (lazy fetch)
+- [ ] Swipe hint appears on first launch, disappears after first swipe, never reappears
+- [ ] Profile "My Events" cards are tappable → navigate to event detail
+- [ ] Admin panel Events tab shows real events (published + drafts) with Edit buttons
 - [ ] No regressions on auth, RSVP, follow, calendar, map, search, notifications
