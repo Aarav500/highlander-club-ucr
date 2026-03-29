@@ -123,19 +123,37 @@ Instead:
 </View>
 ```
 
-Card height = `SCREEN_HEIGHT - HAPPENING_NOW_BANNER_HEIGHT` where `HAPPENING_NOW_BANNER_HEIGHT` is a constant (measure the banner height, e.g. 110) so that exactly one card fills the remaining screen per page.
+Card height is measured dynamically using `onLayout` on the `HappeningNowBanner` wrapper:
 
-> If the "Happening Now" row has no current events, it renders at height 0 and card height equals `SCREEN_HEIGHT`. Use `onLayout` or a fixed constant to handle this gracefully.
+```typescript
+const [bannerHeight, setBannerHeight] = useState(0);
+const cardHeight = SCREEN_HEIGHT - bannerHeight;
+
+<HappeningNowBanner onLayout={(e) => setBannerHeight(e.nativeEvent.layout.height)} />
+<FlatList
+  data={feedEvents}
+  getItemLayout={(_, index) => ({
+    length: cardHeight,
+    offset: cardHeight * index,
+    index,
+  })}
+  ...
+/>
+```
+
+When the "Happening Now" row has no current events it renders at height 0, so `cardHeight` equals `SCREEN_HEIGHT` automatically. Cards must not be rendered until `bannerHeight` has been set (show skeleton cards during this brief initial layout pass).
 
 ### FlatList Props
 ```
 pagingEnabled: true
 snapToAlignment: 'start'
-decelerationRate: 'fast'
 showsVerticalScrollIndicator: false
-Card height: SCREEN_HEIGHT - HAPPENING_NOW_BANNER_HEIGHT
+Card height: SCREEN_HEIGHT - bannerHeight  (measured via onLayout — see above)
 Card marginBottom: 0 (removed)
+getItemLayout: required — see above (enables correct snap positions for all items)
 ```
+
+> Do NOT set `decelerationRate` when using `pagingEnabled`. On iOS, `pagingEnabled` internally uses fast deceleration. On Android, setting `decelerationRate:'fast'` alongside `pagingEnabled` interferes with snap behavior. Omitting it produces correct results on both platforms.
 
 ### Full-Screen Card Layout
 Cards use absolute positioning to layer content over the event image:
