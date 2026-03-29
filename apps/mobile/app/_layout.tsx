@@ -99,6 +99,7 @@ export default function RootLayout() {
         <Stack.Screen name="club-chat/[id]" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="event-ticket/[id]" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="leaderboard" options={{ headerShown: false, presentation: 'modal' }} />
+        <Stack.Screen name="create-event" options={{ headerShown: false, presentation: 'modal' }} />
         <Stack.Screen name="+not-found" />
       </Stack>
       <StatusBar style="light" />
