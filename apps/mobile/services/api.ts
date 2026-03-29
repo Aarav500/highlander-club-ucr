@@ -177,3 +177,9 @@ export const points = {
   checkin: (eventId: string) => request(`/api/points/checkin/${eventId}`, { method: 'POST' }),
   leaderboard: () => request('/api/points/leaderboard'),
 };
+
+// Upload — S3 presigned URL generation
+export const upload = {
+  getPresignedUrl: (contentType: string) =>
+    request(`/api/upload/presign?contentType=${encodeURIComponent(contentType)}`),
+};
