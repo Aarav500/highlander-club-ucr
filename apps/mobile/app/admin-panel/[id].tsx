@@ -360,25 +360,30 @@ export default function AdminPanelScreen() {
             <Text style={[styles.cardTitle, { color: theme.text }]}>Manage Events</Text>
             <TouchableOpacity
               style={[styles.createEventBtn, { backgroundColor: theme.accent }]}
-              onPress={() => router.push(`/club/${id}` as any)}
+              onPress={() => router.push(`/create-event?clubId=${id as string}` as any)}
             >
               <Ionicons name="add" size={20} color="#FFF" />
               <Text style={styles.createEventText}>Create New Event</Text>
             </TouchableOpacity>
             {(dashboardData.events || []).map((event: any) => (
-              <TouchableOpacity
-                key={event.id}
-                style={[styles.eventRow, { borderBottomColor: theme.border }]}
-                onPress={() => router.push(`/event/${event.id}` as any)}
-              >
-                <View style={styles.eventInfo}>
+              <View key={event.id} style={[styles.eventRow, { borderBottomColor: theme.border }]}>
+                <TouchableOpacity
+                  style={styles.eventInfo}
+                  onPress={() => router.push(`/event/${event.id}` as any)}
+                >
                   <Text style={[styles.eventTitle, { color: theme.text }]} numberOfLines={1}>{event.title}</Text>
                   <Text style={[styles.eventMeta, { color: theme.textSecondary }]}>
                     {new Date(event.start_time).toLocaleDateString()} · {event.rsvp_count} RSVPs · {event.views} views
                   </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
-              </TouchableOpacity>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.editBtn, { backgroundColor: theme.primary + '22' }]}
+                  onPress={() => router.push(`/create-event?clubId=${id as string}&eventId=${event.id}` as any)}
+                >
+                  <Ionicons name="pencil" size={14} color={theme.primary} />
+                  <Text style={[styles.editBtnText, { color: theme.primary }]}>Edit</Text>
+                </TouchableOpacity>
+              </View>
             ))}
           </View>
         )}
@@ -522,6 +527,12 @@ const styles = StyleSheet.create({
   eventInfo: { flex: 1 },
   eventTitle: { fontSize: FontSize.md, fontWeight: '600' },
   eventMeta: { fontSize: FontSize.xs, marginTop: 2 },
+  editBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingHorizontal: Spacing.sm, paddingVertical: 6,
+    borderRadius: BorderRadius.sm, marginLeft: Spacing.sm,
+  },
+  editBtnText: { fontSize: 12, fontWeight: '600' },
 
   // Analytics
   metricsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md, marginBottom: Spacing.xl },
