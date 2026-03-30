@@ -11,7 +11,7 @@ on:
       profile:
         description: 'EAS build profile'
         required: true
-        default: 'production'
+        default: 'preview'
         type: choice
         options:
           - development
@@ -51,14 +51,15 @@ jobs:
       - name: Build iOS
         working-directory: apps/mobile
         run: |
-          PROFILE=${{ github.event.inputs.profile || 'production' }}
+          PROFILE="${{ github.event.inputs.profile || 'preview' }}"
           echo "🍎 Building iOS ($PROFILE)..."
-          eas build --platform ios --profile $PROFILE --non-interactive
+          eas build --platform ios --profile "$PROFILE" --non-interactive
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EXPO_PUBLIC_API_URL: ${{ secrets.EC2_PUBLIC_URL }}
 
-      - name: Submit to App Store
-        if: github.event.inputs.profile == 'production' || github.ref == 'refs/heads/main'
+      - name: Submit to App Store Connect
+        if: github.event.inputs.profile == 'production' || (github.event.inputs.profile == '' && github.ref == 'refs/heads/main')
         working-directory: apps/mobile
         run: |
           echo "📦 Submitting to App Store Connect..."
