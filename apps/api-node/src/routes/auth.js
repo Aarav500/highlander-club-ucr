@@ -14,10 +14,12 @@ const CAS_VALIDATE_URL = `${CAS_BASE_URL}/p3/serviceValidate`;
 const CAS_LOGOUT_URL = `${CAS_BASE_URL}/logout`;
 
 // Service URL = where CAS redirects back with the ticket
+// IMPORTANT: platform must be included so the callback knows which redirect to use
 const getServiceUrl = (req) => {
   const baseUrl = process.env.API_BASE_URL
     || `${req.protocol}://${req.get('host')}`;
-  return `${baseUrl}/api/auth/cas/callback`;
+  const platform = req.query.platform || 'web';
+  return `${baseUrl}/api/auth/cas/callback?platform=${platform}`;
 };
 
 // Where to send the user after successful login
@@ -126,9 +128,9 @@ router.get('/cas/callback', async (req, res, next) => {
       const deepLink = `highlanderevents://auth/callback?token=${encodeURIComponent(token)}&user=${encodeURIComponent(JSON.stringify({ id: user.id, email: user.email, name: user.name || user.display_name }))}`;
       res.redirect(deepLink);
     } else {
-      // Web: redirect with token in hash fragment (not exposed to server logs)
+      // Web: redirect to /auth/callback with token as query param
       res.clearCookie('cas_redirect');
-      res.redirect(`${appRedirect}/#/auth/callback?token=${encodeURIComponent(token)}`);
+      res.redirect(`${appRedirect}/auth/callback?token=${encodeURIComponent(token)}`);
     }
   } catch (err) {
     next(err);

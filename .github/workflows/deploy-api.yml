@@ -37,12 +37,11 @@ jobs:
 
       - name: Run tests
         working-directory: apps/api-node
-        run: npm test --if-present || echo "No tests configured — skipping"
+        run: npm test --if-present
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           NODE_ENV: test
-        continue-on-error: true
 
   deploy:
     name: Deploy to Railway
