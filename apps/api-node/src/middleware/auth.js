@@ -5,7 +5,7 @@ if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
   throw new Error('JWT_SECRET must be set in production');
 }
 
-const JWT_SECRET = process.env.JWT_SECRET || 'highlander-events-dev-secret';
+const JWT_SECRET = process.env.JWT_SECRET || 'unipulse-dev-secret-change-in-production';
 
 // ─── Role hierarchy (higher index = more permissions) ───────────────────────
 const ROLE_HIERARCHY = {

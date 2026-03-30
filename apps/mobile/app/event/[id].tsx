@@ -62,7 +62,7 @@ export default function EventDetailScreen() {
   const handleShare = async () => {
     try {
       await Share.share({
-        message: `Check out "${event.title}" at UCR! 🎉\nhighlanderevents://event/${id}`,
+        message: `Check out "${event.title}"! 🎉\nunipulse://event/${id}`,
         title: event.title,
       });
     } catch (err) {

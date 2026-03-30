@@ -92,7 +92,7 @@ export default function ProfileScreen() {
             <Ionicons name="settings-outline" size={22} color={theme.textSecondary} />
           </TouchableOpacity>
 
-          <Text style={styles.headerTitle}>Highlander Events</Text>
+          <Text style={styles.headerTitle}>UniPulse</Text>
 
           {/* Avatar */}
           <View style={styles.avatarRing}>
@@ -101,7 +101,7 @@ export default function ProfileScreen() {
             </View>
           </View>
 
-          <Text style={styles.displayName}>{user.display_name || 'Highlander'}</Text>
+          <Text style={styles.displayName}>{user.display_name || 'Student'}</Text>
           <View style={styles.emailRow}>
             <Text style={styles.email}>{user.email}</Text>
             <View style={styles.verifiedBadge}>

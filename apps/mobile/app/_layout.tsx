@@ -11,7 +11,7 @@ import { registerForPushNotifications, setupNotificationListeners } from '../ser
 
 SplashScreen.preventAutoHideAsync();
 
-const HighlanderDark = {
+const UniPulseDark = {
   ...DarkTheme,
   colors: {
     ...DarkTheme.colors,
@@ -56,7 +56,7 @@ export default function RootLayout() {
     return cleanup;
   }, [isReady, isLoggedIn]);
 
-  // Deep link handling — highlanderevents://event/:id
+  // Deep link handling — unipulse://event/:id
   useEffect(() => {
     if (!isReady) return;
 
@@ -88,7 +88,7 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider value={HighlanderDark}>
+    <ThemeProvider value={UniPulseDark}>
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />

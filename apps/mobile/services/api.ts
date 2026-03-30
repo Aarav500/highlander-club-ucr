@@ -1,12 +1,14 @@
-// API Service — connects mobile app to Highlander Events backend
+// API Service — connects mobile app to UniPulse backend
 import { Platform } from 'react-native';
 
-const PRODUCTION_API = 'https://highlander-club-ucr-production.up.railway.app';
+// Set EXPO_PUBLIC_API_URL in your .env or EAS environment variables
+// e.g. EXPO_PUBLIC_API_URL=http://ec2-xx-xx-xx-xx.compute.amazonaws.com:3001
+const PRODUCTION_API = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3001';
 
 const getApiUrl = () => {
-  // Web uses same-origin proxy (server.js forwards /api → Railway API)
+  // Web uses same-origin proxy (server.js forwards /api → EC2 API)
   if (Platform.OS === 'web') return '';
-  // Native: production builds use Railway, dev builds use localhost
+  // Native: production builds use EC2, dev builds use localhost
   if (!__DEV__) return PRODUCTION_API;
   if (Platform.OS === 'ios') return 'http://localhost:3001';
   return 'http://10.0.2.2:3001'; // Android emulator

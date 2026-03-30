@@ -6,7 +6,8 @@ const { URL } = require('url');
 
 const app = express();
 const PORT = process.env.PORT || 8080;
-const API_TARGET = 'https://highlander-club-ucr-production.up.railway.app';
+// Set API_TARGET env var to your EC2 instance URL, e.g. http://ec2-xx-xx-xx-xx.compute.amazonaws.com:3001
+const API_TARGET = process.env.API_TARGET || 'http://localhost:3001';
 
 // Manual API proxy — no external dependencies needed
 app.use('/api', (req, res) => {
@@ -130,7 +131,7 @@ app.get('*', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🌐 Highlander Events Web running on port ${PORT}`);
+  console.log(`🌐 UniPulse Web running on port ${PORT}`);
   console.log(`🔗 API proxy → ${API_TARGET}`);
   console.log(`🔐 CAS callback → /auth/callback`);
 });

@@ -24,7 +24,7 @@ const getServiceUrl = (req) => {
 
 // Where to send the user after successful login
 const getAppRedirectUrl = () => {
-  return process.env.APP_URL || 'https://highlander-club-ucr-production.up.railway.app';
+  return process.env.APP_URL || `http://localhost:${process.env.PORT || 3001}`;
 };
 
 // Rate limits
@@ -125,7 +125,7 @@ router.get('/cas/callback', async (req, res, next) => {
 
     if (platform === 'mobile') {
       // Deep link back to mobile app
-      const deepLink = `highlanderevents://auth/callback?token=${encodeURIComponent(token)}&user=${encodeURIComponent(JSON.stringify({ id: user.id, email: user.email, name: user.name || user.display_name }))}`;
+      const deepLink = `unipulse://auth/callback?token=${encodeURIComponent(token)}&user=${encodeURIComponent(JSON.stringify({ id: user.id, email: user.email, name: user.name || user.display_name }))}`;
       res.redirect(deepLink);
     } else {
       // Web: redirect to /auth/callback with token as query param
@@ -273,12 +273,12 @@ router.post('/login', loginLimiter, async (req, res, next) => {
       });
 
       await transporter.sendMail({
-        from: process.env.SMTP_FROM || '"Highlander Events" <noreply@highlanderevents.app>',
+        from: process.env.SMTP_FROM || '"UniPulse" <noreply@unipulse.app>',
         to: email,
-        subject: 'Your Highlander Events verification code',
+        subject: 'Your UniPulse verification code',
         html: `
           <div style="font-family:sans-serif;max-width:400px;margin:0 auto;padding:20px;">
-            <h2 style="color:#2D6CC0;">Highlander Events</h2>
+            <h2 style="color:#2D6CC0;">UniPulse</h2>
             <p>Your verification code is:</p>
             <div style="background:#f4f4f4;padding:16px;text-align:center;font-size:32px;font-weight:bold;letter-spacing:8px;border-radius:8px;margin:16px 0;">
               ${code}

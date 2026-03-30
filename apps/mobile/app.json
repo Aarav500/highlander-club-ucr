@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Highlander Events",
-    "slug": "highlander-events",
+    "name": "UniPulse",
+    "slug": "unipulse",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "highlanderevents",
+    "scheme": "unipulse",
     "userInterfaceStyle": "dark",
     "splash": {
       "image": "./assets/images/splash-icon.png",
@@ -14,7 +14,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.ucr.highlanderevents"
+      "bundleIdentifier": "com.unipulse.app"
     },
     "android": {
       "adaptiveIcon": {
@@ -23,7 +23,7 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "package": "com.ucr.highlanderevents"
+      "package": "com.unipulse.app"
     },
     "web": {
       "bundler": "metro",

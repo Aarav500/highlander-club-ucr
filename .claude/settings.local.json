@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(cd /c/Users/aarav/Downloads/FullStack-Template-main/apps/mobile && npx expo export --platform web --output-dir /tmp/expo-test-export 2>&1 | tail -10)",
-      "Bash(npx expo:*)"
+      "Bash(npx expo:*)",
+      "Bash(find /c/Users/aarav/Downloads/FullStack-Template-main/specs /c/Users/aarav/Downloads/FullStack-Template-main/plans -maxdepth 2 -type f ! -path */node_modules/*)"
     ]
   }
 }

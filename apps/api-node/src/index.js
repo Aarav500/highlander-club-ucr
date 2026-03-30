@@ -21,8 +21,8 @@ app.use(cors({
     if (allowedOrigins.includes('*')) return cb(null, true);
     // Allow specific origins
     if (allowedOrigins.includes(origin)) return cb(null, true);
-    // Allow all Railway domains
-    if (origin.endsWith('.up.railway.app')) return cb(null, true);
+    // Allow EC2 / any amazonaws domain
+    if (origin.includes('.amazonaws.com') || origin.includes('.compute.amazonaws.com')) return cb(null, true);
     cb(new Error(`CORS: origin ${origin} not allowed`));
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
@@ -37,7 +37,7 @@ const uploadLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 50, standardHea
 
 // Health check
 app.get('/health', (req, res) => {
-  res.json({ ok: true, service: 'highlander-events-api', timestamp: new Date().toISOString() });
+  res.json({ ok: true, service: 'unipulse-api', timestamp: new Date().toISOString() });
 });
 
 // Routes
@@ -73,7 +73,7 @@ app.use((req, res) => {
 if (process.env.NODE_ENV !== 'test') {
   require('./cron/digestCron')();
   app.listen(PORT, () => {
-    console.log(`🚀 Highlander Events API running on port ${PORT}`);
+    console.log(`🚀 UniPulse API running on port ${PORT}`);
   });
 }
 

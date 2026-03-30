@@ -1,6 +1,6 @@
-// Highlander Events — UCR Brand Theme
+// UniPulse — Brand Theme
 export const Colors = {
-  // UCR Brand Colors
+  // Brand Colors
   ucrBlue: '#2D6CC0',
   ucrGold: '#F1AB00',
 

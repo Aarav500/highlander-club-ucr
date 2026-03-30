@@ -26,7 +26,7 @@ export default function LoginScreen() {
   useEffect(() => {
     const handleDeepLink = async (event: { url: string }) => {
       const url = event.url;
-      if (url.includes('auth/callback')) {
+      if (url.includes('unipulse://') && url.includes('auth/callback')) {
         // Extract token from URL
         const params = new URLSearchParams(url.split('?')[1] || '');
         const token = params.get('token');
@@ -115,8 +115,8 @@ export default function LoginScreen() {
           <View style={[styles.logoCircle, { backgroundColor: theme.accent + '22' }]}>
             <Ionicons name="flame" size={48} color={theme.accent} />
           </View>
-          <Text style={[styles.appName, { color: theme.text }]}>Highlander Events</Text>
-          <Text style={[styles.tagline, { color: theme.textSecondary }]}>Never miss a UCR event again.</Text>
+          <Text style={[styles.appName, { color: theme.text }]}>UniPulse</Text>
+          <Text style={[styles.tagline, { color: theme.textSecondary }]}>Your campus. Your pulse.</Text>
         </View>
 
         {!showEmailFallback ? (
