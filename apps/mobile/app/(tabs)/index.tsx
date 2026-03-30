@@ -133,7 +133,7 @@ function EventCard({
 
   const handleShare = () => {
     Share.share({
-      message: `Check out "${event.title}" at UCR! 🎉\n${new Date(event.start_time).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}\nhighlanderevents://event/${event.id}`,
+      message: `Check out "${event.title}"! 🎉\n${new Date(event.start_time).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}\nunipulse://event/${event.id}`,
       title: event.title,
     });
   };
