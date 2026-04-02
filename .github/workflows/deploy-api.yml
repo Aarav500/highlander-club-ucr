@@ -233,17 +233,17 @@ jobs:
             elif [ "$STATUS" = "Failed" ] || [ "$STATUS" = "TimedOut" ] || [ "$STATUS" = "Cancelled" ]; then
               echo "❌ Deployment failed: $STATUS"
               echo ""
-              echo "=== STDOUT (step progress) ==="
+              echo "=== FULL INVOCATION DETAILS ==="
               aws ssm get-command-invocation \
                 --command-id "${{ steps.ssm.outputs.command_id }}" \
                 --instance-id "${{ secrets.EC2_INSTANCE_ID }}" \
-                --query "StandardOutputContent" --output text || true
+                --output json 2>&1 || true
               echo ""
-              echo "=== STDERR (error details) ==="
-              aws ssm get-command-invocation \
+              echo "=== COMMAND DETAILS ==="
+              aws ssm list-command-invocations \
                 --command-id "${{ steps.ssm.outputs.command_id }}" \
-                --instance-id "${{ secrets.EC2_INSTANCE_ID }}" \
-                --query "StandardErrorContent" --output text || true
+                --details \
+                --output json 2>&1 || true
               exit 1
             fi
           done
