@@ -49,6 +49,7 @@ services:
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
       CAS_BASE_URL: https://cas.ucr.edu/cas
+      DATABASE_SSL: "false"
     ports:
       - "3001:3001"
     healthcheck:

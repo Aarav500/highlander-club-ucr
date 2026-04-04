@@ -6,9 +6,20 @@ require('dotenv').config({ path: path.resolve(__dirname, '../../../../.env') });
 require('dotenv').config({ path: path.resolve(__dirname, '../../../.env') });
 
 async function migrate() {
-  const ssl = process.env.DATABASE_URL?.includes('railway') || process.env.DATABASE_URL?.includes('postgres')
-    ? { rejectUnauthorized: false }
-    : false;
+  // SSL: respect explicit env var, or auto-detect for known cloud providers
+  const sslEnv = process.env.DATABASE_SSL;
+  let ssl = false;
+  if (sslEnv === 'true') {
+    ssl = { rejectUnauthorized: false };
+  } else if (sslEnv === 'false') {
+    ssl = false;
+  } else {
+    // Auto-detect: enable SSL for Railway/Neon/Supabase (remote hosts)
+    const dbUrl = process.env.DATABASE_URL || '';
+    ssl = (dbUrl.includes('railway') || dbUrl.includes('neon') || dbUrl.includes('supabase'))
+      ? { rejectUnauthorized: false }
+      : false;
+  }
   const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl });
 
   try {
