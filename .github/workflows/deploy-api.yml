@@ -120,49 +120,56 @@ jobs:
           clean_url = f'https://github.com/{repo}.git'
 
           cmds = [
-              'set -ex',
+              'set -e',
               'export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
               'export DEBIAN_FRONTEND=noninteractive',
 
-              # ── 1. Install Docker ────────────────────────────────────────
+              # ── 1. Install Docker (quiet) ────────────────────────────────
               'echo "=== Step 1: Docker ===" && '
-              'if ! command -v docker &>/dev/null; then '
-              '  curl -fsSL https://get.docker.com | bash && '
-              '  systemctl enable docker && '
+              'if command -v docker &>/dev/null; then '
+              '  echo "Docker already installed: $(docker --version)"; '
+              'else '
+              '  echo "Installing Docker..." && '
+              '  curl -fsSL https://get.docker.com 2>/dev/null | bash -s -- --quiet &>/dev/null && '
+              '  systemctl enable docker &>/dev/null && '
               '  systemctl start docker && '
-              f'  usermod -aG docker {u}; '
-              'fi && '
-              'echo "Docker: $(docker --version)"',
+              f'  usermod -aG docker {u} && '
+              '  echo "Docker installed: $(docker --version)"; '
+              'fi',
 
               # ── 2. Docker Compose plugin ─────────────────────────────────
               'echo "=== Step 2: Docker Compose ===" && '
-              'if ! docker compose version &>/dev/null; then '
-              '  apt-get update && apt-get install -y docker-compose-plugin; '
-              'fi && '
-              'echo "Compose: $(docker compose version)"',
+              'if docker compose version &>/dev/null; then '
+              '  echo "Compose: $(docker compose version)"; '
+              'else '
+              '  apt-get update -qq && apt-get install -y -qq docker-compose-plugin && '
+              '  echo "Compose installed: $(docker compose version)"; '
+              'fi',
 
               # ── 3. Git ───────────────────────────────────────────────────
               'echo "=== Step 3: Git ===" && '
-              'command -v git &>/dev/null || '
-              '(apt-get update && apt-get install -y git)',
+              '(command -v git &>/dev/null && echo "Git: $(git --version)") || '
+              '(apt-get update -qq && apt-get install -y -qq git && echo "Git installed")',
 
               # ── 4. Git credentials ───────────────────────────────────────
               f'echo "=== Step 4: Git credentials ===" && '
               f'sudo -u {u} git config --global credential.helper store && '
               f'printf "https://x-access-token:{pat}@github.com\\n" | '
               f'sudo -u {u} tee /home/{u}/.git-credentials > /dev/null && '
-              f'chmod 600 /home/{u}/.git-credentials'
+              f'chmod 600 /home/{u}/.git-credentials && echo "Credentials set"'
               if pat else
               f'echo "=== Step 4: skipped (public repo) ==="',
 
               # ── 5. Clone or pull repo ────────────────────────────────────
               f'echo "=== Step 5: Sync repo ===" && '
               f'if [ -d {app_dir}/.git ]; then '
-              f'  sudo -u {u} git -C {app_dir} fetch origin main && '
-              f'  sudo -u {u} git -C {app_dir} reset --hard origin/main; '
+              f'  sudo -u {u} git -C {app_dir} fetch origin main --quiet && '
+              f'  sudo -u {u} git -C {app_dir} reset --hard origin/main --quiet && '
+              f'  echo "Repo updated"; '
               f'else '
-              f'  sudo -u {u} git clone {clone_url} {app_dir} && '
-              f'  sudo -u {u} git -C {app_dir} remote set-url origin {clean_url}; '
+              f'  sudo -u {u} git clone --quiet {clone_url} {app_dir} && '
+              f'  sudo -u {u} git -C {app_dir} remote set-url origin {clean_url} && '
+              f'  echo "Repo cloned"; '
               f'fi',
 
               # ── 6. Write .env ────────────────────────────────────────────
@@ -173,29 +180,40 @@ jobs:
               f'echo ".env written ($(wc -l < {app_dir}/.env) vars)"',
 
               # ── 7. Stop old PM2 if running ───────────────────────────────
-              f'echo "=== Step 7: Stop old PM2 ===" && '
-              f'(sudo -u {u} bash -c "export PATH=/usr/local/bin:$PATH && pm2 kill" 2>/dev/null || true)',
+              f'echo "=== Step 7: Cleanup ===" && '
+              f'(sudo -u {u} bash -c "export PATH=/usr/local/bin:$PATH && pm2 kill" 2>/dev/null || true) && '
+              f'echo "Old processes cleaned"',
 
               # ── 8. Docker Compose up ─────────────────────────────────────
               f'echo "=== Step 8: Docker Compose up ===" && '
               f'cd {app_dir} && '
               f'docker compose down --remove-orphans 2>/dev/null || true && '
-              f'docker compose up -d --build --force-recreate && '
-              f'echo "Containers running:" && '
+              f'echo "Building and starting containers..." && '
+              f'docker compose up -d --build --force-recreate 2>&1 | tail -30 && '
+              f'echo "" && echo "=== Container Status ===" && '
               f'docker compose ps',
 
               # ── 9. Wait for health ───────────────────────────────────────
-              'echo "=== Step 9: Health check ===" && '
-              'sleep 15 && '
-              'curl -sf http://localhost:3001/health && echo " ✅ API healthy" || echo " ⚠️  API not ready yet" && '
-              'curl -sf http://localhost:8080 > /dev/null && echo "✅ Web healthy" || echo "⚠️  Web not ready yet" && '
-              'curl -sf http://localhost:80 > /dev/null && echo "✅ Nginx healthy" || echo "⚠️  Nginx not ready yet"',
+              'echo "" && echo "=== Step 9: Health checks (waiting 20s) ===" && '
+              'sleep 20 && '
+              'echo "Checking API..." && '
+              '(curl -sf http://localhost:3001/health && echo "✅ API healthy") || echo "❌ API not responding" && '
+              'echo "Checking Web..." && '
+              '(curl -sf http://localhost:8080 > /dev/null && echo "✅ Web healthy") || echo "❌ Web not responding" && '
+              'echo "Checking Nginx..." && '
+              '(curl -sf http://localhost:80 > /dev/null && echo "✅ Nginx healthy") || echo "❌ Nginx not responding"',
+
+              # ── 10. Show container logs ──────────────────────────────────
+              f'echo "" && echo "=== Container Logs (last 10 lines each) ===" && '
+              f'echo "--- db ---" && docker logs unipulse-db-1 --tail=5 2>&1 || true && '
+              f'echo "--- api ---" && docker logs unipulse-api-1 --tail=10 2>&1 || true && '
+              f'echo "--- web ---" && docker logs unipulse-web-1 --tail=5 2>&1 || true && '
+              f'echo "--- nginx ---" && docker logs unipulse-nginx-1 --tail=5 2>&1 || true',
 
               # ── Done ─────────────────────────────────────────────────────
-              f'echo "=== ✅ Deployment complete ===" && '
+              f'echo "" && echo "=== ✅ Deployment complete ===" && '
               f'echo "🌐 http://{domain}" && '
-              f'echo "📡 http://{domain}/health" && '
-              f'docker compose -f {app_dir}/docker-compose.yml logs --tail=20',
+              f'echo "📡 http://{domain}/health"',
           ]
 
           with open('/tmp/ssm-params.json', 'w') as f:
