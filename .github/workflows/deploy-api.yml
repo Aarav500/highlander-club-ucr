@@ -117,7 +117,9 @@ jobs:
           clean_url = f'https://github.com/{repo}.git'
 
           cmds = [
-              'set -e',
+              'set -ex',
+              'export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
+              'export DEBIAN_FRONTEND=noninteractive',
 
               # ── 1. SSM Agent ────────────────────────────────────────────
               'echo "=== Step 1: SSM Agent ===" && '
@@ -132,11 +134,11 @@ jobs:
               '  else '
               '    curl -fsSL https://rpm.nodesource.com/setup_20.x | bash - && yum install -y nodejs; '
               '  fi; '
-              'fi && echo "Node: $(node --version)"',
+              'fi && hash -r && echo "Node: $(node --version)" && echo "npm: $(npm --version)"',
 
               # ── 3. PM2 ───────────────────────────────────────────────────
               'echo "=== Step 3: PM2 ===" && '
-              'command -v pm2 &>/dev/null || npm install -g pm2 && '
+              'npm install -g pm2 && hash -r && '
               'echo "PM2: $(pm2 --version)"',
 
               # ── 4. Git ───────────────────────────────────────────────────
@@ -156,7 +158,8 @@ jobs:
               # ── 6. Clone or pull ─────────────────────────────────────────
               f'echo "=== Step 6: sync repo ===" && '
               f'if [ -d {app_dir}/.git ]; then '
-              f'  sudo -u {u} git -C {app_dir} pull origin main; '
+              f'  sudo -u {u} git -C {app_dir} fetch origin main && '
+              f'  sudo -u {u} git -C {app_dir} reset --hard origin/main; '
               f'else '
               f'  sudo -u {u} git clone {clone_url} {app_dir} && '
               f'  sudo -u {u} git -C {app_dir} remote set-url origin {clean_url}; '
@@ -171,18 +174,18 @@ jobs:
 
               # ── 8. Install dependencies ────────────────────────────────────
               f'echo "=== Step 8: npm ci ===" && '
-              f'sudo -u {u} bash -c "cd {app_dir}/apps/api-node && npm ci --omit=dev"',
+              f'sudo -u {u} bash -c "export PATH=/usr/local/bin:/usr/bin:$PATH && cd {app_dir}/apps/api-node && npm ci --omit=dev"',
 
               # ── 9. Start / restart PM2 ─────────────────────────────────────
               f'echo "=== Step 9: PM2 start/restart ===" && '
-              f'sudo -u {u} bash -c "'
-              f'  pm2 restart unipulse-api 2>/dev/null || '
-              f'  pm2 start {app_dir}/apps/api-node/src/index.js --name unipulse-api; '
+              f'sudo -u {u} bash -c "export PATH=/usr/local/bin:/usr/bin:$PATH && export HOME=/home/{u} && '
+              f'  pm2 delete unipulse-api 2>/dev/null || true; '
+              f'  pm2 start {app_dir}/apps/api-node/src/index.js --name unipulse-api --cwd {app_dir} && '
               f'  pm2 save"',
 
               # ── 10. PM2 startup on reboot (idempotent) ────────────────────
               f'echo "=== Step 10: PM2 startup ===" && '
-              f'STARTUP=$(sudo -u {u} pm2 startup systemd -u {u} --hp /home/{u} 2>&1 | grep "sudo env" || true) && '
+              f'STARTUP=$(sudo -u {u} bash -c "export PATH=/usr/local/bin:/usr/bin:$PATH && pm2 startup systemd -u {u} --hp /home/{u}" 2>&1 | grep "sudo env" || true) && '
               f'[ -n "$STARTUP" ] && eval "$STARTUP" && systemctl enable pm2-{u} 2>/dev/null || true',
 
               # ── Done ──────────────────────────────────────────────────────
