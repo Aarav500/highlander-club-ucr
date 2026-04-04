@@ -4,6 +4,7 @@ const rateLimit = require('express-rate-limit');
 const cookieParser = require('cookie-parser');
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../../../.env') });
+require('dotenv').config(); // fallback: Docker injects env vars directly
 
 const app = express();
 const PORT = process.env.PORT || 3001;

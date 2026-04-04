@@ -1,10 +1,13 @@
-name: Deploy API to AWS EC2
+name: Deploy to AWS EC2 (Docker)
 
 on:
   push:
     branches: [main]
     paths:
       - 'apps/api-node/**'
+      - 'apps/web/**'
+      - 'docker-compose.yml'
+      - 'nginx/**'
       - '.github/workflows/deploy-api.yml'
   workflow_dispatch:
 
@@ -42,9 +45,9 @@ jobs:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           NODE_ENV: test
 
-  # ─── 2. Provision + Deploy ─────────────────────────────────────────────────
+  # ─── 2. Docker Deploy ──────────────────────────────────────────────────────
   deploy:
-    name: Provision & Deploy to EC2 via SSM
+    name: Docker Deploy to EC2 via SSM
     runs-on: ubuntu-latest
     needs: test
     environment: production
@@ -59,11 +62,9 @@ jobs:
 
       # Build the SSM command JSON using Python to safely handle
       # secrets with special characters (no shell-escaping issues).
-      - name: Build SSM provision + deploy commands
+      - name: Build SSM Docker deploy commands
         env:
           EC2_USER:       ${{ secrets.EC2_USER }}
-          EC2_PUBLIC_URL: ${{ secrets.EC2_PUBLIC_URL }}
-          DATABASE_URL:   ${{ secrets.DATABASE_URL }}
           JWT_SECRET:     ${{ secrets.JWT_SECRET }}
           APP_AWS_KEY:    ${{ secrets.AWS_ACCESS_KEY_ID }}
           APP_AWS_SECRET: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -75,24 +76,27 @@ jobs:
           SMTP_PASS:      ${{ secrets.SMTP_PASS }}
           GITHUB_PAT:     ${{ secrets.GITHUB_PAT }}
           GITHUB_REPO:    ${{ github.repository }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
         run: |
           python3 << 'PYEOF'
           import json, os, base64
 
           u       = os.environ['EC2_USER']           # ec2-user or ubuntu
           app_dir = f'/home/{u}/unipulse'
-          ec2_url = os.environ['EC2_PUBLIC_URL'].rstrip('/')
           repo    = os.environ['GITHUB_REPO']
           pat     = os.environ.get('GITHUB_PAT', '')
+          domain  = 'unipulse.aarav-shah.com'
 
-          # Build .env content — base64 encoded so special chars are safe
+          # Build .env for docker-compose — base64 encoded for safety
+          pg_pass = os.environ.get('POSTGRES_PASSWORD', 'unipulse_secret_2026')
           env_content = '\n'.join([
               'NODE_ENV=production',
-              'PORT=3001',
-              f'DATABASE_URL={os.environ["DATABASE_URL"]}',
+              f'POSTGRES_DB=unipulse',
+              f'POSTGRES_USER=unipulse',
+              f'POSTGRES_PASSWORD={pg_pass}',
               f'JWT_SECRET={os.environ["JWT_SECRET"]}',
-              f'API_BASE_URL={ec2_url}',
-              f'APP_URL={ec2_url}',
+              f'API_BASE_URL=http://{domain}',
+              f'APP_URL=http://{domain}',
               'ALLOWED_ORIGINS=*',
               f'AWS_ACCESS_KEY_ID={os.environ["APP_AWS_KEY"]}',
               f'AWS_SECRET_ACCESS_KEY={os.environ["APP_AWS_SECRET"]}',
@@ -107,13 +111,12 @@ jobs:
           ])
           env_b64 = base64.b64encode(env_content.encode()).decode()
 
-          # Git clone URL — uses PAT for private repos
+          # Git clone URL
           clone_url = (
               f'https://x-access-token:{pat}@github.com/{repo}.git'
               if pat else
               f'https://github.com/{repo}.git'
           )
-          # After clone, reset remote to clean URL (no token stored)
           clean_url = f'https://github.com/{repo}.git'
 
           cmds = [
@@ -121,42 +124,39 @@ jobs:
               'export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
               'export DEBIAN_FRONTEND=noninteractive',
 
-              # ── 1. SSM Agent ────────────────────────────────────────────
-              'echo "=== Step 1: SSM Agent ===" && '
-              'systemctl is-active amazon-ssm-agent 2>/dev/null || '
-              'systemctl start amazon-ssm-agent 2>/dev/null || true',
+              # ── 1. Install Docker ────────────────────────────────────────
+              'echo "=== Step 1: Docker ===" && '
+              'if ! command -v docker &>/dev/null; then '
+              '  curl -fsSL https://get.docker.com | bash && '
+              '  systemctl enable docker && '
+              '  systemctl start docker && '
+              f'  usermod -aG docker {u}; '
+              'fi && '
+              'echo "Docker: $(docker --version)"',
 
-              # ── 2. Node.js 20 ────────────────────────────────────────────
-              'echo "=== Step 2: Node.js 20 ===" && '
-              'if ! node --version 2>/dev/null | grep -q "^v20"; then '
-              '  if command -v apt-get &>/dev/null; then '
-              '    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && apt-get install -y nodejs; '
-              '  else '
-              '    curl -fsSL https://rpm.nodesource.com/setup_20.x | bash - && yum install -y nodejs; '
-              '  fi; '
-              'fi && hash -r && echo "Node: $(node --version)" && echo "npm: $(npm --version)"',
+              # ── 2. Docker Compose plugin ─────────────────────────────────
+              'echo "=== Step 2: Docker Compose ===" && '
+              'if ! docker compose version &>/dev/null; then '
+              '  apt-get update && apt-get install -y docker-compose-plugin; '
+              'fi && '
+              'echo "Compose: $(docker compose version)"',
 
-              # ── 3. PM2 ───────────────────────────────────────────────────
-              'echo "=== Step 3: PM2 ===" && '
-              'npm install -g pm2 && hash -r && '
-              'echo "PM2: $(pm2 --version)"',
-
-              # ── 4. Git ───────────────────────────────────────────────────
-              'echo "=== Step 4: git ===" && '
+              # ── 3. Git ───────────────────────────────────────────────────
+              'echo "=== Step 3: Git ===" && '
               'command -v git &>/dev/null || '
-              '(command -v apt-get &>/dev/null && apt-get install -y git || yum install -y git)',
+              '(apt-get update && apt-get install -y git)',
 
-              # ── 5. Git credentials (private repo support) ────────────────
-              f'echo "=== Step 5: git credentials ===" && '
+              # ── 4. Git credentials ───────────────────────────────────────
+              f'echo "=== Step 4: Git credentials ===" && '
               f'sudo -u {u} git config --global credential.helper store && '
               f'printf "https://x-access-token:{pat}@github.com\\n" | '
               f'sudo -u {u} tee /home/{u}/.git-credentials > /dev/null && '
               f'chmod 600 /home/{u}/.git-credentials'
               if pat else
-              f'echo "=== Step 5: skipped (public repo) ==="',
+              f'echo "=== Step 4: skipped (public repo) ==="',
 
-              # ── 6. Clone or pull ─────────────────────────────────────────
-              f'echo "=== Step 6: sync repo ===" && '
+              # ── 5. Clone or pull repo ────────────────────────────────────
+              f'echo "=== Step 5: Sync repo ===" && '
               f'if [ -d {app_dir}/.git ]; then '
               f'  sudo -u {u} git -C {app_dir} fetch origin main && '
               f'  sudo -u {u} git -C {app_dir} reset --hard origin/main; '
@@ -165,34 +165,37 @@ jobs:
               f'  sudo -u {u} git -C {app_dir} remote set-url origin {clean_url}; '
               f'fi',
 
-              # ── 7. Write .env ─────────────────────────────────────────────
-              f'echo "=== Step 7: write .env ===" && '
+              # ── 6. Write .env ────────────────────────────────────────────
+              f'echo "=== Step 6: Write .env ===" && '
               f'printf "%s" "{env_b64}" | base64 -d > {app_dir}/.env && '
               f'chown {u}:{u} {app_dir}/.env && '
               f'chmod 600 {app_dir}/.env && '
               f'echo ".env written ($(wc -l < {app_dir}/.env) vars)"',
 
-              # ── 8. Install dependencies ────────────────────────────────────
-              f'echo "=== Step 8: npm ci ===" && '
-              f'sudo -u {u} bash -c "export PATH=/usr/local/bin:/usr/bin:$PATH && cd {app_dir}/apps/api-node && npm ci --omit=dev"',
+              # ── 7. Stop old PM2 if running ───────────────────────────────
+              f'echo "=== Step 7: Stop old PM2 ===" && '
+              f'(sudo -u {u} bash -c "export PATH=/usr/local/bin:$PATH && pm2 kill" 2>/dev/null || true)',
 
-              # ── 9. Start / restart PM2 ─────────────────────────────────────
-              f'echo "=== Step 9: PM2 start/restart ===" && '
-              f'sudo -u {u} bash -c "export PATH=/usr/local/bin:/usr/bin:$PATH && export HOME=/home/{u} && '
-              f'  pm2 delete unipulse-api 2>/dev/null || true; '
-              f'  pm2 start {app_dir}/apps/api-node/src/index.js --name unipulse-api --cwd {app_dir} && '
-              f'  pm2 save"',
+              # ── 8. Docker Compose up ─────────────────────────────────────
+              f'echo "=== Step 8: Docker Compose up ===" && '
+              f'cd {app_dir} && '
+              f'docker compose down --remove-orphans 2>/dev/null || true && '
+              f'docker compose up -d --build --force-recreate && '
+              f'echo "Containers running:" && '
+              f'docker compose ps',
 
-              # ── 10. PM2 startup on reboot (idempotent) ────────────────────
-              f'echo "=== Step 10: PM2 startup ===" && '
-              f'STARTUP=$(sudo -u {u} bash -c "export PATH=/usr/local/bin:/usr/bin:$PATH && pm2 startup systemd -u {u} --hp /home/{u}" 2>&1 | grep "sudo env" || true) && '
-              f'[ -n "$STARTUP" ] && eval "$STARTUP" && systemctl enable pm2-{u} 2>/dev/null || true',
+              # ── 9. Wait for health ───────────────────────────────────────
+              'echo "=== Step 9: Health check ===" && '
+              'sleep 15 && '
+              'curl -sf http://localhost:3001/health && echo " ✅ API healthy" || echo " ⚠️  API not ready yet" && '
+              'curl -sf http://localhost:8080 > /dev/null && echo "✅ Web healthy" || echo "⚠️  Web not ready yet" && '
+              'curl -sf http://localhost:80 > /dev/null && echo "✅ Nginx healthy" || echo "⚠️  Nginx not ready yet"',
 
-              # ── Done ──────────────────────────────────────────────────────
-              'echo "=== ✅ Deployment complete ===" && '
-              'sleep 3 && '
-              'curl -sf http://localhost:3001/health && echo "✅ Health check passed" || '
-              'echo "⚠️  API not responding yet — run: pm2 logs unipulse-api"',
+              # ── Done ─────────────────────────────────────────────────────
+              f'echo "=== ✅ Deployment complete ===" && '
+              f'echo "🌐 http://{domain}" && '
+              f'echo "📡 http://{domain}/health" && '
+              f'docker compose -f {app_dir}/docker-compose.yml logs --tail=20',
           ]
 
           with open('/tmp/ssm-params.json', 'w') as f:
@@ -207,7 +210,7 @@ jobs:
             --instance-ids "${{ secrets.EC2_INSTANCE_ID }}" \
             --document-name "AWS-RunShellScript" \
             --parameters file:///tmp/ssm-params.json \
-            --timeout-seconds 600 \
+            --timeout-seconds 900 \
             --output text \
             --query "Command.CommandId")
           echo "command_id=$COMMAND_ID" >> $GITHUB_OUTPUT
@@ -215,8 +218,8 @@ jobs:
 
       - name: Wait for completion
         run: |
-          echo "⏳ Waiting for EC2 provisioning + deploy..."
-          for i in $(seq 1 30); do
+          echo "⏳ Waiting for Docker deploy on EC2..."
+          for i in $(seq 1 60); do
             sleep 10
             STATUS=$(aws ssm get-command-invocation \
               --command-id "${{ steps.ssm.outputs.command_id }}" \
@@ -227,7 +230,6 @@ jobs:
 
             if [ "$STATUS" = "Success" ]; then
               echo "✅ Deployment succeeded!"
-              # Print output for visibility
               aws ssm get-command-invocation \
                 --command-id "${{ steps.ssm.outputs.command_id }}" \
                 --instance-id "${{ secrets.EC2_INSTANCE_ID }}" \
@@ -236,19 +238,19 @@ jobs:
             elif [ "$STATUS" = "Failed" ] || [ "$STATUS" = "TimedOut" ] || [ "$STATUS" = "Cancelled" ]; then
               echo "❌ Deployment failed: $STATUS"
               echo ""
-              echo "=== FULL INVOCATION DETAILS ==="
+              echo "=== STDOUT ==="
               aws ssm get-command-invocation \
                 --command-id "${{ steps.ssm.outputs.command_id }}" \
                 --instance-id "${{ secrets.EC2_INSTANCE_ID }}" \
-                --output json 2>&1 || true
+                --query "StandardOutputContent" --output text 2>&1 || true
               echo ""
-              echo "=== COMMAND DETAILS ==="
-              aws ssm list-command-invocations \
+              echo "=== STDERR ==="
+              aws ssm get-command-invocation \
                 --command-id "${{ steps.ssm.outputs.command_id }}" \
-                --details \
-                --output json 2>&1 || true
+                --instance-id "${{ secrets.EC2_INSTANCE_ID }}" \
+                --query "StandardErrorContent" --output text 2>&1 || true
               exit 1
             fi
           done
-          echo "❌ Timed out after 300s"
+          echo "❌ Timed out after 600s"
           exit 1
