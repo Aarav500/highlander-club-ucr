@@ -1,18 +1,31 @@
+# ── Stage 1: Build Expo web app from mobile source ───────────────────────────
+FROM node:20-alpine AS builder
+
+WORKDIR /build
+
+# Copy mobile package files for layer caching
+COPY apps/mobile/package.json apps/mobile/package-lock.json* ./
+
+RUN npm ci
+
+# Copy full mobile source
+COPY apps/mobile/ ./
+
+# Export Expo web build
+RUN npx expo export --platform web --output-dir /dist
+
+# ── Stage 2: Serve with Express ───────────────────────────────────────────────
 FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy package files first for better layer caching
-COPY package.json package-lock.json* ./
+COPY apps/web/package.json apps/web/package-lock.json* ./
 
-# Install production dependencies only
 RUN npm ci --omit=dev
 
-# Copy server and pre-built static files
-COPY server.js ./
-COPY dist/ ./dist/
+COPY apps/web/server.js ./
+COPY --from=builder /dist ./dist/
 
-# Expose web port
 EXPOSE 8080
 
 CMD ["node", "server.js"]

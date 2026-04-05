@@ -62,8 +62,8 @@ services:
   # ── Web Frontend (Express + Static) ─────────────────────────────────────
   web:
     build:
-      context: ./apps/web
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: apps/web/Dockerfile
     restart: always
     depends_on:
       api:

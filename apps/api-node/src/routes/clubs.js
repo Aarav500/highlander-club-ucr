@@ -1,15 +1,15 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db/pool');
-const { authenticate, requireClubRole, requireClubAdmin, requireClubPresident, ROLE_HIERARCHY, ADMIN_ROLES } = require('../middleware/auth');
+const { authenticate, optionalAuth, requireClubRole, requireClubAdmin, requireClubPresident, ROLE_HIERARCHY, ADMIN_ROLES } = require('../middleware/auth');
 const { upload } = require('../middleware/upload');
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CLUB ENDPOINTS
 // ═══════════════════════════════════════════════════════════════════════════════
 
-// GET /api/clubs — List clubs
-router.get('/', authenticate, async (req, res, next) => {
+// GET /api/clubs — List clubs — public, personalized if authed
+router.get('/', optionalAuth, async (req, res, next) => {
   try {
     const { category, search } = req.query;
     const params = [];
@@ -26,15 +26,20 @@ router.get('/', authenticate, async (req, res, next) => {
 
     const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
-    params.push(req.user.id);
+    const userId = req.user?.id || null;
+    params.push(userId);
     const userIdx = params.length;
 
     const result = await pool.query(`
-      SELECT c.*, 
+      SELECT c.*,
              COUNT(DISTINCT f.user_id) as follower_count,
              COUNT(DISTINCT e.id) as event_count,
-             EXISTS(SELECT 1 FROM follows WHERE user_id = $${userIdx} AND club_id = c.id) as user_follows,
-             (SELECT role FROM club_members WHERE user_id = $${userIdx} AND club_id = c.id) as user_role
+             CASE WHEN $${userIdx}::int IS NOT NULL
+               THEN EXISTS(SELECT 1 FROM follows WHERE user_id = $${userIdx} AND club_id = c.id)
+               ELSE false END as user_follows,
+             CASE WHEN $${userIdx}::int IS NOT NULL
+               THEN (SELECT role FROM club_members WHERE user_id = $${userIdx} AND club_id = c.id)
+               ELSE NULL END as user_role
       FROM clubs c
       LEFT JOIN follows f ON f.club_id = c.id
       LEFT JOIN events e ON e.club_id = c.id AND e.status = 'published'

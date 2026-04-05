@@ -6,6 +6,7 @@ on:
     paths:
       - 'apps/api-node/**'
       - 'apps/web/**'
+      - 'apps/mobile/**'
       - 'docker-compose.yml'
       - 'nginx/**'
       - '.github/workflows/deploy-api.yml'
@@ -74,7 +75,7 @@ jobs:
           SMTP_PORT:      ${{ secrets.SMTP_PORT }}
           SMTP_USER:      ${{ secrets.SMTP_USER }}
           SMTP_PASS:      ${{ secrets.SMTP_PASS }}
-          GITHUB_PAT:     ${{ secrets.GITHUB_PAT }}
+          GITHUB_PAT:     ${{ secrets.GITHUB }}
           GITHUB_REPO:    ${{ github.repository }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
         run: |

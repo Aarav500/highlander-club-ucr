@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db/pool');
-const { authenticate, requireClubAdmin, ADMIN_ROLES } = require('../middleware/auth');
+const { authenticate, optionalAuth, requireClubAdmin, ADMIN_ROLES } = require('../middleware/auth');
 const { upload } = require('../middleware/upload');
 
-// GET /api/events — Feed with filters (only published)
-router.get('/', authenticate, async (req, res, next) => {
+// GET /api/events — Feed with filters (only published) — public, personalized if authed
+router.get('/', optionalAuth, async (req, res, next) => {
   try {
     const { category, club_id, date, page = 1, limit = 20 } = req.query;
     const offset = (page - 1) * limit;
@@ -25,7 +25,8 @@ router.get('/', authenticate, async (req, res, next) => {
       conditions.push(`DATE(e.start_time) = $${params.length}`);
     }
 
-    params.push(req.user.id, limit, offset);
+    const userId = req.user?.id || null;
+    params.push(userId, limit, offset);
     const userIdx = params.length - 2;
     const limitIdx = params.length - 1;
     const offsetIdx = params.length;
@@ -33,7 +34,9 @@ router.get('/', authenticate, async (req, res, next) => {
     const query = `
       SELECT e.*, c.name as club_name, c.logo_url as club_logo,
              COUNT(r.user_id) as rsvp_count,
-             EXISTS(SELECT 1 FROM rsvps WHERE user_id = $${userIdx} AND event_id = e.id) as user_rsvped
+             CASE WHEN $${userIdx}::int IS NOT NULL
+               THEN EXISTS(SELECT 1 FROM rsvps WHERE user_id = $${userIdx} AND event_id = e.id)
+               ELSE false END as user_rsvped
       FROM events e
       JOIN clubs c ON e.club_id = c.id
       LEFT JOIN rsvps r ON r.event_id = e.id

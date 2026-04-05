@@ -39,6 +39,19 @@ function authenticate(req, res, next) {
   }
 }
 
+// ─── Optional auth — attaches user if token present, never rejects ──────────
+function optionalAuth(req, res, next) {
+  const header = req.headers.authorization;
+  if (header && header.startsWith('Bearer ')) {
+    try {
+      req.user = jwt.verify(header.split(' ')[1], JWT_SECRET);
+    } catch (_) {
+      // Invalid token — treat as unauthenticated
+    }
+  }
+  next();
+}
+
 // ─── Check if user has a specific role (or higher) in a club ────────────────
 // Usage: requireClubRole('officer') — requires officer, VP, or president
 function requireClubRole(minimumRole = 'officer', clubIdParam = 'id') {
@@ -101,12 +114,13 @@ function generateToken(user) {
   );
 }
 
-module.exports = { 
-  authenticate, 
+module.exports = {
+  authenticate,
+  optionalAuth,
   requireClubRole,
-  requireClubAdmin, 
+  requireClubAdmin,
   requireClubPresident,
-  generateToken, 
+  generateToken,
   JWT_SECRET,
   ROLE_HIERARCHY,
   ADMIN_ROLES,

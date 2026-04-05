@@ -230,8 +230,8 @@ async function acceptPendingInvites(user) {
 // EMAIL-CODE AUTHENTICATION (Fallback for development / pre-CAS registration)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-// POST /api/auth/login — Send verification code to @ucr.edu email
-router.post('/login', loginLimiter, async (req, res, next) => {
+// Shared handler for sending an email verification code
+async function sendLoginCode(req, res, next) {
   try {
     const { email } = req.body;
 
@@ -296,7 +296,11 @@ router.post('/login', loginLimiter, async (req, res, next) => {
   } catch (err) {
     next(err);
   }
-});
+}
+
+// POST /api/auth/login and /api/auth/dev-login (alias used by web client build)
+router.post('/login', loginLimiter, sendLoginCode);
+router.post('/dev-login', loginLimiter, sendLoginCode);
 
 // POST /api/auth/verify — Verify code and return JWT
 router.post('/verify', async (req, res, next) => {
