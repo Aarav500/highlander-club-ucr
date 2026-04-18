@@ -311,20 +311,31 @@ router.post('/verify', async (req, res, next) => {
       return res.status(400).json({ error: 'Email and code are required' });
     }
 
-    // Find valid code
-    const result = await pool.query(
-      `SELECT id FROM login_codes 
-       WHERE email = $1 AND code = $2 AND used = false AND expires_at > now()
-       ORDER BY created_at DESC LIMIT 1`,
-      [email, code]
-    );
+    // --- App Store / Play Store Reviewer Bypass ---
+    let isValidCode = false;
+    let bypassed = false;
 
-    if (result.rows.length === 0) {
-      return res.status(401).json({ error: 'Invalid or expired code' });
+    if (email === 'reviewer@ucr.edu' && code === '000000') {
+      isValidCode = true;
+      bypassed = true;
+      console.log('✅ App Store Reviewer login bypassed');
+    } else {
+      // Find valid code
+      const result = await pool.query(
+        `SELECT id FROM login_codes 
+         WHERE email = $1 AND code = $2 AND used = false AND expires_at > now()
+         ORDER BY created_at DESC LIMIT 1`,
+        [email, code]
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(401).json({ error: 'Invalid or expired code' });
+      }
+      
+      // Mark code as used
+      await pool.query('UPDATE login_codes SET used = true WHERE id = $1', [result.rows[0].id]);
+      isValidCode = true;
     }
-
-    // Mark code as used
-    await pool.query('UPDATE login_codes SET used = true WHERE id = $1', [result.rows[0].id]);
 
     // Find or create user
     let user;
