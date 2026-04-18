@@ -3,6 +3,7 @@ import type { NextConfig } from "next";
 const API_TARGET = process.env.API_TARGET || "http://localhost:3001";
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   async rewrites() {
     return [
       {
