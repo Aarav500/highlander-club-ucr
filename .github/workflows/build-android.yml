@@ -59,7 +59,13 @@ jobs:
       - name: Build Android
         working-directory: apps/mobile
         run: |
-          PROFILE="${{ github.event.inputs.profile || 'preview' }}"
+          if [ -n "${{ github.event.inputs.profile }}" ]; then
+            PROFILE="${{ github.event.inputs.profile }}"
+          elif [ "${{ github.ref }}" == "refs/heads/main" ]; then
+            PROFILE="production"
+          else
+            PROFILE="preview"
+          fi
           echo "🤖 Building Android ($PROFILE)..."
           eas build --platform android --profile "$PROFILE" --non-interactive
         env:
