@@ -54,7 +54,7 @@ app.use('/api/digest', require('./routes/digest'));
 // V2 Routes
 app.use('/api/chat', require('./routes/chat'));
 app.use('/api/tickets', require('./routes/tickets'));
-app.use('/api/points', require('./routes/points'));
+// Note: /api/points removed — rewards system discontinued
 
 // Global error handler
 app.use((err, req, res, next) => {

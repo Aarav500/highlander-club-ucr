@@ -5,7 +5,9 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Colors, Spacing, BorderRadius, FontSize } from '../../constants/Colors';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import { Colors, Spacing, BorderRadius, FontSize, Fonts, Glass, Shadows } from '../../constants/Colors';
+import { useFadeIn } from '../../constants/animations';
 import { events as eventsApi } from '../../services/api';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -276,8 +278,8 @@ export default function MapScreen() {
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={[styles.headerTitle, { color: theme.text }]}>Campus Map</Text>
-        <Text style={[styles.headerSub, { color: theme.textSecondary }]}>
+        <Text style={styles.headerTitle}>Campus Map</Text>
+        <Text style={styles.headerSub}>
           {filteredEvents.length} event{filteredEvents.length !== 1 ? 's' : ''} on campus
         </Text>
       </View>
@@ -327,78 +329,83 @@ export default function MapScreen() {
 
       {/* Selected Event Card */}
       {selectedEvent && (
-        <TouchableOpacity
-          style={[styles.eventCard, { backgroundColor: theme.surfaceElevated }]}
-          onPress={() => router.push(`/event/${selectedEvent.id}` as any)}
-          activeOpacity={0.8}
-        >
-          <View
-            style={[
-              styles.cardDot,
-              {
-                backgroundColor:
-                  Colors.categories[selectedEvent.category as keyof typeof Colors.categories] ||
-                  theme.primary,
-              },
-            ]}
-          />
-          <View style={styles.cardBody}>
-            <Text style={[styles.cardTitle, { color: theme.text }]} numberOfLines={1}>
-              {selectedEvent.title}
-            </Text>
-            <Text style={[styles.cardMeta, { color: theme.textSecondary }]}>
-              {selectedEvent.club_name} · {formatTime(selectedEvent.start_time)}
-            </Text>
-            <View style={styles.cardRow}>
-              <Ionicons name="location" size={12} color={theme.accent} />
-              <Text style={[styles.cardLoc, { color: theme.accent }]}>
-                {selectedEvent.location}
+        <Animated.View entering={FadeInDown.springify().damping(18)}>
+          <TouchableOpacity
+            style={styles.eventCard}
+            onPress={() => router.push(`/event/${selectedEvent.id}` as any)}
+            activeOpacity={0.8}
+          >
+            <View
+              style={[
+                styles.cardDot,
+                {
+                  backgroundColor:
+                    Colors.categories[selectedEvent.category as keyof typeof Colors.categories] ||
+                    theme.primary,
+                  ...Shadows.glowSmall(Colors.categories[selectedEvent.category as keyof typeof Colors.categories] || theme.primary),
+                },
+              ]}
+            />
+            <View style={styles.cardBody}>
+              <Text style={styles.cardTitle} numberOfLines={1}>
+                {selectedEvent.title}
               </Text>
-              <View style={{ flex: 1 }} />
-              <Ionicons name="people" size={12} color={theme.textSecondary} />
-              <Text style={[styles.cardPeople, { color: theme.textSecondary }]}>
-                {selectedEvent.rsvp_count} going
+              <Text style={styles.cardMeta}>
+                {selectedEvent.club_name} · {formatTime(selectedEvent.start_time)}
               </Text>
+              <View style={styles.cardRow}>
+                <Ionicons name="location" size={12} color={theme.accent} />
+                <Text style={styles.cardLoc}>
+                  {selectedEvent.location}
+                </Text>
+                <View style={{ flex: 1 }} />
+                <Ionicons name="people" size={12} color={theme.textSecondary} />
+                <Text style={styles.cardPeople}>
+                  {selectedEvent.rsvp_count} going
+                </Text>
+              </View>
             </View>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color={theme.textMuted} />
-        </TouchableOpacity>
+            <Ionicons name="chevron-forward" size={20} color={theme.textMuted} />
+          </TouchableOpacity>
+        </Animated.View>
       )}
 
       {/* Event List */}
       <FlatList
         data={filteredEvents}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ paddingHorizontal: Spacing.md, paddingBottom: 100 }}
-        renderItem={({ item }) => {
+        contentContainerStyle={{ paddingHorizontal: Spacing.md, paddingBottom: 120 }}
+        renderItem={({ item, index }) => {
           const catColor =
             Colors.categories[item.category as keyof typeof Colors.categories] || theme.primary;
           const active = selectedEvent?.id === item.id;
           return (
-            <TouchableOpacity
-              style={[
-                styles.listItem,
-                {
-                  backgroundColor: active ? catColor + '15' : theme.surface,
-                  borderColor: active ? catColor : 'transparent',
-                },
-              ]}
-              onPress={() => {
-                setSelectedEvent(item);
-                router.push(`/event/${item.id}` as any);
-              }}
-            >
-              <View style={[styles.listDot, { backgroundColor: catColor }]} />
-              <View style={styles.listBody}>
-                <Text style={[styles.listTitle, { color: theme.text }]} numberOfLines={1}>
-                  {item.title}
-                </Text>
-                <Text style={[styles.listMeta, { color: theme.textSecondary }]}>
-                  {item.location} · {formatTime(item.start_time)}
-                </Text>
-              </View>
-              <Text style={[styles.listBadge, { color: catColor }]}>{item.category}</Text>
-            </TouchableOpacity>
+            <Animated.View entering={FadeInDown.delay(index * 40).springify().damping(18)}>
+              <TouchableOpacity
+                style={[
+                  styles.listItem,
+                  {
+                    backgroundColor: active ? catColor + '15' : Glass.background,
+                    borderColor: active ? catColor : Glass.border,
+                  },
+                ]}
+                onPress={() => {
+                  setSelectedEvent(item);
+                  router.push(`/event/${item.id}` as any);
+                }}
+              >
+                <View style={[styles.listDot, { backgroundColor: catColor, ...Shadows.glowSmall(catColor) }]} />
+                <View style={styles.listBody}>
+                  <Text style={styles.listTitle} numberOfLines={1}>
+                    {item.title}
+                  </Text>
+                  <Text style={styles.listMeta}>
+                    {item.location} · {formatTime(item.start_time)}
+                  </Text>
+                </View>
+                <Text style={[styles.listBadge, { color: catColor }]}>{item.category}</Text>
+              </TouchableOpacity>
+            </Animated.View>
           );
         }}
         ListEmptyComponent={
@@ -416,11 +423,11 @@ export default function MapScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingTop: 60 },
+  container: { flex: 1, paddingTop: Platform.OS === 'ios' ? 56 : 40 },
   centered: { justifyContent: 'center', alignItems: 'center' },
   header: { paddingHorizontal: Spacing.md, marginBottom: Spacing.sm },
-  headerTitle: { fontSize: FontSize.xl, fontWeight: '700' },
-  headerSub: { fontSize: FontSize.sm, marginTop: 2 },
+  headerTitle: { fontSize: FontSize.xl, fontFamily: Fonts.heading, color: Colors.dark.text },
+  headerSub: { fontSize: FontSize.sm, fontFamily: Fonts.body, color: Colors.dark.textSecondary, marginTop: 2 },
 
   filterBar: { maxHeight: 40, marginBottom: Spacing.sm },
   filterContent: { paddingHorizontal: Spacing.md, gap: Spacing.sm },
@@ -429,9 +436,9 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.xs,
     borderRadius: BorderRadius.full,
     borderWidth: 1,
-    borderColor: Colors.dark.border,
+    borderColor: Glass.border,
   },
-  pillText: { fontSize: FontSize.xs, fontWeight: '600' },
+  pillText: { fontSize: FontSize.xs, fontFamily: Fonts.headingMed },
 
   mapWrap: {
     marginHorizontal: Spacing.md,
@@ -440,7 +447,8 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.lg,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: Colors.dark.border,
+    borderColor: Glass.border,
+    ...Shadows.card,
   },
 
   eventCard: {
@@ -451,31 +459,35 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
     marginBottom: Spacing.md,
     gap: Spacing.sm,
+    backgroundColor: Glass.background,
+    borderWidth: 1,
+    borderColor: Glass.border,
+    ...Shadows.card,
   },
-  cardDot: { width: 10, height: 10, borderRadius: 5 },
+  cardDot: { width: 12, height: 12, borderRadius: 6 },
   cardBody: { flex: 1 },
-  cardTitle: { fontSize: FontSize.md, fontWeight: '600' },
-  cardMeta: { fontSize: FontSize.xs, marginTop: 2 },
+  cardTitle: { fontSize: FontSize.md, fontFamily: Fonts.headingMed, color: Colors.dark.text },
+  cardMeta: { fontSize: FontSize.xs, fontFamily: Fonts.body, color: Colors.dark.textSecondary, marginTop: 2 },
   cardRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 4 },
-  cardLoc: { fontSize: FontSize.xs, fontWeight: '500' },
-  cardPeople: { fontSize: FontSize.xs },
+  cardLoc: { fontSize: FontSize.xs, fontFamily: Fonts.headingMed, color: Colors.dark.accent },
+  cardPeople: { fontSize: FontSize.xs, fontFamily: Fonts.body, color: Colors.dark.textSecondary },
 
   listItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: Spacing.sm,
-    borderRadius: BorderRadius.sm,
+    padding: Spacing.sm + 2,
+    borderRadius: BorderRadius.md,
     marginBottom: Spacing.xs,
     borderWidth: 1,
     gap: Spacing.sm,
   },
   listDot: { width: 8, height: 8, borderRadius: 4 },
   listBody: { flex: 1 },
-  listTitle: { fontSize: FontSize.sm, fontWeight: '500' },
-  listMeta: { fontSize: FontSize.xs },
-  listBadge: { fontSize: 10, fontWeight: '600' },
+  listTitle: { fontSize: FontSize.sm, fontFamily: Fonts.headingMed, color: Colors.dark.text },
+  listMeta: { fontSize: FontSize.xs, fontFamily: Fonts.body, color: Colors.dark.textSecondary },
+  listBadge: { fontSize: 10, fontFamily: Fonts.heading },
 
   emptyState: { alignItems: 'center', paddingTop: 40, gap: 8 },
-  emptyTitle: { fontSize: FontSize.md, fontWeight: '600' },
-  emptySub: { fontSize: FontSize.sm },
+  emptyTitle: { fontSize: FontSize.md, fontFamily: Fonts.headingMed, color: Colors.dark.text },
+  emptySub: { fontSize: FontSize.sm, fontFamily: Fonts.body, color: Colors.dark.textSecondary },
 });

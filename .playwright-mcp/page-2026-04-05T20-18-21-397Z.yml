@@ -1,0 +1,105 @@
+- generic [ref=e8]:
+  - generic [ref=e9]:
+    - generic [ref=e16]:
+      - generic [ref=e18]: 
+      - generic [ref=e19]: No upcoming events
+      - generic [ref=e20]: Follow clubs to see their events in your feed
+    - generic [ref=e66]:
+      - generic [ref=e67]:
+        - generic [ref=e68]: April 2026
+        - generic [ref=e70] [cursor=pointer]: Today
+      - generic [ref=e71]:
+        - generic [ref=e73] [cursor=pointer]: 
+        - generic [ref=e74]: Apr 5 — Apr 11, 2026
+        - generic [ref=e76] [cursor=pointer]: 
+      - generic [ref=e77]:
+        - generic [ref=e78] [cursor=pointer]:
+          - generic [ref=e79]: Sun
+          - generic [ref=e80]: "5"
+        - generic [ref=e81] [cursor=pointer]:
+          - generic [ref=e82]: Mon
+          - generic [ref=e83]: "6"
+        - generic [ref=e84] [cursor=pointer]:
+          - generic [ref=e85]: Tue
+          - generic [ref=e86]: "7"
+        - generic [ref=e87] [cursor=pointer]:
+          - generic [ref=e88]: Wed
+          - generic [ref=e89]: "8"
+        - generic [ref=e90] [cursor=pointer]:
+          - generic [ref=e91]: Thu
+          - generic [ref=e92]: "9"
+        - generic [ref=e93] [cursor=pointer]:
+          - generic [ref=e94]: Fri
+          - generic [ref=e95]: "10"
+        - generic [ref=e96] [cursor=pointer]:
+          - generic [ref=e97]: Sat
+          - generic [ref=e98]: "11"
+      - generic [ref=e99]:
+        - generic [ref=e100]: Sunday, April 5
+        - generic [ref=e101]: 0 events
+      - generic [ref=e104]:
+        - generic [ref=e106]: 
+        - generic [ref=e107]: No events on this day
+        - generic [ref=e108]: Try another date or follow more clubs
+    - generic [ref=e112]:
+      - generic [ref=e113]:
+        - generic [ref=e114]: Campus Map
+        - generic [ref=e115]: 0 events on campus
+      - generic [ref=e117]:
+        - generic [ref=e119] [cursor=pointer]: All
+        - generic [ref=e121] [cursor=pointer]: Academic
+        - generic [ref=e123] [cursor=pointer]: Social
+        - generic [ref=e125] [cursor=pointer]: Sports
+        - generic [ref=e127] [cursor=pointer]: Career
+        - generic [ref=e129] [cursor=pointer]: Cultural
+        - generic [ref=e131] [cursor=pointer]: Greek Life
+      - generic [ref=e133]:
+        - generic [ref=e134]: © OpenStreetMap · CARTO
+        - generic [ref=e135]:
+          - button [ref=e144] [cursor=pointer]: +
+          - button [ref=e145] [cursor=pointer]: −
+      - generic [ref=e140]:
+        - generic [ref=e141]: 
+        - generic [ref=e142]: No events on campus
+        - generic [ref=e143]: Follow some clubs to see their events here
+    - generic [ref=e149]:
+      - generic [ref=e151]:
+        - generic [ref=e152]: 
+        - textbox "Search events and clubs..." [ref=e153]
+      - generic [ref=e155]:
+        - generic [ref=e157] [cursor=pointer]: All
+        - generic [ref=e159] [cursor=pointer]: Academic
+        - generic [ref=e161] [cursor=pointer]: Social
+        - generic [ref=e163] [cursor=pointer]: Sports
+        - generic [ref=e165] [cursor=pointer]: Career
+        - generic [ref=e167] [cursor=pointer]: Cultural
+        - generic [ref=e169] [cursor=pointer]: Greek Life
+      - generic [ref=e172]:
+        - generic [ref=e173]: 
+        - generic [ref=e174]: Search events and clubs at UCR
+  - tablist [ref=e22]:
+    - tab "  Feed" [ref=e24] [cursor=pointer]:
+      - generic [ref=e25]:
+        - generic [ref=e27]: 
+        - generic [ref=e29]: 
+      - generic [ref=e30]: Feed
+    - tab "  Calendar" [ref=e32] [cursor=pointer]:
+      - generic [ref=e33]:
+        - generic [ref=e35]: 
+        - generic [ref=e37]: 
+      - generic [ref=e38]: Calendar
+    - tab "  Map" [ref=e40] [cursor=pointer]:
+      - generic [ref=e41]:
+        - generic [ref=e43]: 
+        - generic [ref=e45]: 
+      - generic [ref=e46]: Map
+    - tab "  Search" [active] [selected] [ref=e48] [cursor=pointer]:
+      - generic [ref=e49]:
+        - generic [ref=e51]: 
+        - generic [ref=e53]: 
+      - generic [ref=e54]: Search
+    - tab "  Profile" [ref=e56] [cursor=pointer]:
+      - generic [ref=e57]:
+        - generic [ref=e59]: 
+        - generic [ref=e61]: 
+      - generic [ref=e62]: Profile

@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Colors, Spacing, BorderRadius, FontSize } from '../constants/Colors';
+import { Colors, Spacing, BorderRadius, FontSize, Fonts } from '../constants/Colors';
 import { events as eventsApi, upload as uploadApi } from '../services/api';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -14,7 +14,9 @@ const CATEGORIES = ['Academic', 'Social', 'Sports', 'Career', 'Cultural', 'Greek
 
 export default function CreateEventScreen() {
   const params = useLocalSearchParams();
-  const clubId = params.clubId as string;
+  // Accept both club_id (from profile post button) and clubId (legacy)
+  const clubId = (params.club_id || params.clubId) as string;
+  const clubName = params.club_name as string | undefined;
   const eventId = params.eventId as string | undefined;
   const router = useRouter();
   const theme = Colors.dark;
@@ -145,16 +147,19 @@ export default function CreateEventScreen() {
           <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
             <Ionicons name="close" size={24} color={theme.text} />
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: theme.text }]}>
-            {isEditMode ? 'Edit Event' : 'Create Event'}
-          </Text>
+          <View style={{ flex: 1, marginHorizontal: Spacing.sm }}>
+            <Text style={[styles.headerTitle, { color: theme.text }]}>
+              {isEditMode ? 'Edit Event' : 'Post Event'}
+            </Text>
+            {!!clubName && <Text style={styles.headerSub}>{clubName}</Text>}
+          </View>
           <TouchableOpacity
-            style={[styles.submitBtn, { backgroundColor: theme.accent, opacity: submitting ? 0.6 : 1 }]}
+            style={[styles.submitBtn, { opacity: submitting ? 0.6 : 1 }]}
             onPress={handleSubmit}
             disabled={submitting}
           >
             {submitting
-              ? <ActivityIndicator size="small" color="#FFF" />
+              ? <ActivityIndicator size="small" color="#000" />
               : <Text style={styles.submitBtnText}>{isEditMode ? 'Save' : 'Post'}</Text>
             }
           </TouchableOpacity>
@@ -424,24 +429,26 @@ const styles = StyleSheet.create({
   centered: { justifyContent: 'center', alignItems: 'center' },
 
   header: {
-    paddingTop: 60,
+    paddingTop: Platform.OS === 'ios' ? 60 : 40,
     paddingBottom: Spacing.sm,
     paddingHorizontal: Spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     borderBottomWidth: 1,
+    backgroundColor: Colors.dark.background,
   },
   backBtn: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { fontSize: FontSize.lg, fontWeight: '700' },
+  headerTitle: { fontFamily: Fonts.heading, fontSize: FontSize.lg },
+  headerSub: { fontFamily: Fonts.body, fontSize: FontSize.xs, color: Colors.dark.textMuted, marginTop: 1 },
   submitBtn: {
+    backgroundColor: Colors.dark.accent,
     paddingHorizontal: Spacing.md,
     paddingVertical: 8,
     borderRadius: BorderRadius.full,
-    minWidth: 60,
+    minWidth: 64,
     alignItems: 'center',
   },
-  submitBtnText: { color: '#FFF', fontSize: FontSize.sm, fontWeight: '700' },
+  submitBtnText: { fontFamily: Fonts.heading, color: '#000', fontSize: FontSize.sm },
 
   scrollContent: { padding: Spacing.md, paddingBottom: 60 },
 
@@ -457,16 +464,17 @@ const styles = StyleSheet.create({
   errorText: { flex: 1, fontSize: FontSize.sm },
 
   sectionLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1.5,
+    fontFamily: Fonts.heading,
+    fontSize: FontSize.xs,
+    letterSpacing: 1.8,
     marginTop: Spacing.lg,
     marginBottom: Spacing.xs,
+    color: Colors.dark.textMuted,
   },
 
-  inputCard: { borderRadius: BorderRadius.md, padding: Spacing.md, marginBottom: Spacing.sm },
-  titleInput: { fontSize: FontSize.xl, fontWeight: '700', minHeight: 44 },
-  textArea: { fontSize: FontSize.md, minHeight: 80 },
+  inputCard: { borderRadius: BorderRadius.md, padding: Spacing.md, marginBottom: Spacing.sm, borderWidth: 1, borderColor: Colors.dark.border },
+  titleInput: { fontFamily: Fonts.heading, fontSize: FontSize.xl, minHeight: 44, color: Colors.dark.text },
+  textArea: { fontFamily: Fonts.body, fontSize: FontSize.md, minHeight: 80, color: Colors.dark.text },
 
   categoryRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xs, marginBottom: Spacing.sm },
   categoryPill: {
@@ -475,9 +483,9 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.full,
     borderWidth: 1.5,
   },
-  categoryPillText: { fontSize: 12, fontWeight: '700' },
+  categoryPillText: { fontFamily: Fonts.heading, fontSize: 12 },
 
-  fieldLabel: { fontSize: FontSize.xs, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
+  fieldLabel: { fontFamily: Fonts.headingMed, fontSize: FontSize.xs, textTransform: 'uppercase', letterSpacing: 0.5, color: Colors.dark.textSecondary },
   dateRow: { flexDirection: 'row', gap: Spacing.sm },
   dateBtn: {
     flex: 1,

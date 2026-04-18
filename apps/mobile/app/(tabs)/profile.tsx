@@ -1,26 +1,27 @@
 import { useState, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, Image,
-  ActivityIndicator, Alert, TextInput, ScrollView,
+  ActivityIndicator, Alert, ScrollView, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
-import { Colors, Spacing, BorderRadius, FontSize } from '../../constants/Colors';
-import {
-  users as usersApi, events as eventsApi, clubs as clubsApi,
-  points as pointsApi, upload as uploadApi, setAuthToken,
-} from '../../services/api';
+import * as WebBrowser from 'expo-web-browser';
+import { LinearGradient } from 'expo-linear-gradient';
+import Animated, { FadeInDown, FadeIn, ZoomIn } from 'react-native-reanimated';
+import { Colors, Spacing, BorderRadius, FontSize, Fonts, Glass, Shadows, Gradients } from '../../constants/Colors';
+import { useFadeIn, useSpringPress } from '../../constants/animations';
+import { users as usersApi, events as eventsApi, clubs as clubsApi, upload as uploadApi, setAuthToken } from '../../services/api';
 
+const theme = Colors.dark;
 type TabKey = 'events' | 'following' | 'clubs' | 'friends';
-
-const ADMIN_ROLES = new Set(['officer', 'vice_president', 'president']);
+const OFFICER_ROLES = new Set(['officer', 'vice_president', 'president']);
+const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const theme = Colors.dark;
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -29,8 +30,8 @@ export default function ProfileScreen() {
   const [followedClubs, setFollowedClubs] = useState<any[]>([]);
   const [myClubs, setMyClubs] = useState<any[]>([]);
   const [friends, setFriends] = useState<any[]>([]);
-  const [friendEmail, setFriendEmail] = useState('');
-  const [myPoints, setMyPoints] = useState<any>(null);
+
+  const headerFade = useFadeIn({ delay: 0, translateY: -15 });
 
   useFocusEffect(useCallback(() => { loadProfile(); }, []));
 
@@ -39,55 +40,41 @@ export default function ProfileScreen() {
     try {
       const me = await usersApi.me();
       setUser(me);
-      const [evts, allClubs, allFriends, pts] = await Promise.all([
+      const [evts, allClubs, allFriends] = await Promise.all([
         eventsApi.list().catch(() => []),
         clubsApi.list().catch(() => []),
         usersApi.friends().catch(() => []),
-        pointsApi.me().catch(() => null),
       ]);
       setMyEvents(evts.filter((e: any) => e.user_rsvped));
       setFollowedClubs(allClubs.filter((c: any) => c.user_follows));
-      setMyClubs(allClubs.filter((c: any) => ADMIN_ROLES.has(c.user_role)));
+      setMyClubs(allClubs.filter((c: any) => c.user_role));
       setFriends(allFriends);
-      setMyPoints(pts);
     } catch { setUser(null); }
     finally { setLoading(false); }
   };
 
-  const handleSignIn = () => router.push('/(auth)/login' as any);
-
   const handlePickAvatar = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: 'images',
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
+      mediaTypes: 'images', allowsEditing: true, aspect: [1, 1], quality: 0.8,
     });
     if (result.canceled || !result.assets[0]) return;
     const asset = result.assets[0];
     setUploadingAvatar(true);
     try {
       const { uploadUrl, publicUrl } = await uploadApi.getPresignedUrl('image/jpeg');
-      const blob = await fetch(asset.uri).then(r => r.blob());
+      const blob = await fetch(asset.uri).then((r) => r.blob());
       await fetch(uploadUrl, { method: 'PUT', body: blob, headers: { 'Content-Type': 'image/jpeg' } });
       await usersApi.update({ avatar_url: publicUrl });
       setUser((u: any) => ({ ...u, avatar_url: publicUrl }));
     } catch {
       Alert.alert('Upload Failed', 'Could not upload photo. Try a smaller image.');
-    } finally {
-      setUploadingAvatar(false);
-    }
+    } finally { setUploadingAvatar(false); }
   };
 
-  const handleAddFriend = async () => {
-    if (!friendEmail.includes('@ucr.edu')) { Alert.alert('Invalid', 'Enter a @ucr.edu email'); return; }
-    try {
-      await usersApi.addFriend(friendEmail);
-      setFriendEmail('');
-      const fr = await usersApi.friends().catch(() => []);
-      setFriends(fr);
-      Alert.alert('Added!', `${friendEmail} is now your friend.`);
-    } catch { Alert.alert('Error', 'Could not add friend.'); }
+  const handleHighlanderLink = async () => {
+    await WebBrowser.openBrowserAsync('https://highlanderlink.ucr.edu', {
+      toolbarColor: theme.surface, controlsColor: theme.accent,
+    });
   };
 
   if (loading) return (
@@ -98,154 +85,145 @@ export default function ProfileScreen() {
 
   if (!user) return (
     <View style={[styles.container, styles.centered]}>
-      <View style={styles.signInAvatar}>
-        <Ionicons name="person-outline" size={40} color={theme.textMuted} />
-      </View>
+      <Animated.View entering={ZoomIn.springify().damping(14)}>
+        <View style={styles.signInIcon}>
+          <Ionicons name="person-outline" size={36} color={theme.textMuted} />
+        </View>
+      </Animated.View>
       <Text style={styles.signInTitle}>Sign in to see your profile</Text>
-      <TouchableOpacity style={styles.signInBtn} onPress={handleSignIn}>
-        <Text style={styles.signInBtnText}>Sign in with @ucr.edu</Text>
+      <TouchableOpacity style={styles.signInBtn} onPress={() => router.push('/(auth)/login' as any)}>
+        <LinearGradient colors={Gradients.primary} style={styles.signInBtnGrad}>
+          <Text style={styles.signInBtnText}>Sign in with UCR</Text>
+        </LinearGradient>
       </TouchableOpacity>
     </View>
   );
 
-  const tabs: { key: TabKey; label: string; count: number }[] = [
-    { key: 'events', label: 'Events', count: myEvents.length },
-    { key: 'following', label: 'Following', count: followedClubs.length },
-    { key: 'clubs', label: 'My Clubs', count: myClubs.length },
-    { key: 'friends', label: 'Friends', count: friends.length },
+  const tabs: { key: TabKey; label: string; count: number; icon: string }[] = [
+    { key: 'events', label: 'Events', count: myEvents.length, icon: 'calendar' },
+    { key: 'following', label: 'Following', count: followedClubs.length, icon: 'heart' },
+    { key: 'clubs', label: 'My Clubs', count: myClubs.length, icon: 'shield' },
+    { key: 'friends', label: 'Friends', count: friends.length, icon: 'people' },
   ];
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
-        {/* Header */}
-        <View style={styles.profileHeader}>
-          <TouchableOpacity style={styles.settingsBtn}>
-            <Ionicons name="settings-outline" size={22} color={theme.textSecondary} />
-          </TouchableOpacity>
+      <ScrollView contentContainerStyle={{ paddingBottom: 140 }}>
+        {/* Animated header gradient */}
+        <LinearGradient colors={[theme.primary + '30', theme.cyan + '10', 'transparent']}
+          locations={[0, 0.4, 1]} style={styles.headerGrad} />
 
-          <Text style={styles.headerTitle}>UniPulse</Text>
-
-          {/* Tappable Avatar with camera badge */}
-          <TouchableOpacity style={styles.avatarRing} onPress={handlePickAvatar} disabled={uploadingAvatar}>
-            {uploadingAvatar ? (
-              <View style={styles.avatar}>
-                <ActivityIndicator color={theme.accent} />
-              </View>
-            ) : user.avatar_url ? (
-              <Image source={{ uri: user.avatar_url }} style={styles.avatarImage} />
-            ) : (
-              <View style={styles.avatar}>
-                <Text style={styles.avatarLetter}>
-                  {user.display_name?.charAt(0) || user.email?.charAt(0) || 'U'}
-                </Text>
-              </View>
-            )}
+        {/* Profile header */}
+        <Animated.View style={[styles.profileHeader, headerFade.animatedStyle]}>
+          {/* Avatar with glow ring */}
+          <TouchableOpacity style={styles.avatarWrap} onPress={handlePickAvatar} disabled={uploadingAvatar}>
+            <View style={styles.avatarGlowRing}>
+              {uploadingAvatar ? (
+                <View style={styles.avatar}><ActivityIndicator color={theme.accent} /></View>
+              ) : user.avatar_url ? (
+                <Image source={{ uri: user.avatar_url }} style={styles.avatarImg} />
+              ) : (
+                <View style={styles.avatar}>
+                  <Text style={styles.avatarLetter}>{user.name?.charAt(0) || user.email?.charAt(0) || 'U'}</Text>
+                </View>
+              )}
+            </View>
             <View style={styles.cameraBadge}>
-              <Ionicons name="camera" size={12} color="#FFF" />
+              <Ionicons name="camera" size={11} color="#FFF" />
             </View>
           </TouchableOpacity>
 
-          <Text style={styles.displayName}>{user.display_name || 'Student'}</Text>
+          <Text style={styles.displayName}>{user.name || 'Highlander'}</Text>
           <View style={styles.emailRow}>
             <Text style={styles.email}>{user.email}</Text>
-            <View style={styles.verifiedBadge}>
-              <Text style={styles.verifiedText}>UCR</Text>
+            <View style={styles.ucrBadge}>
+              <LinearGradient colors={Gradients.primary} style={styles.ucrBadgeGrad}>
+                <Text style={styles.ucrBadgeText}>UCR</Text>
+              </LinearGradient>
             </View>
           </View>
 
-          <View style={styles.statsRow}>
+          {/* Stats with glass card */}
+          <View style={styles.statsCard}>
             {[
               { num: myEvents.length, label: 'Events' },
               { num: followedClubs.length, label: 'Clubs' },
               { num: friends.length, label: 'Friends' },
-            ].map((stat, i) => (
-              <View key={i} style={[styles.stat, i < 2 && styles.statBorder]}>
-                <Text style={styles.statNum}>{stat.num}</Text>
-                <Text style={styles.statLabel}>{stat.label}</Text>
-              </View>
+            ].map((s, i) => (
+              <Animated.View key={i} entering={FadeInDown.delay(200 + i * 80).springify()} style={[styles.stat, i < 2 && styles.statDivider]}>
+                <Text style={styles.statNum}>{s.num}</Text>
+                <Text style={styles.statLabel}>{s.label}</Text>
+              </Animated.View>
             ))}
           </View>
-        </View>
+        </Animated.View>
 
-        {/* Points Card */}
-        {myPoints && (
-          <TouchableOpacity style={styles.pointsCard} onPress={() => router.push('/leaderboard' as any)} activeOpacity={0.8}>
-            <View style={styles.pointsLeft}>
-              <View style={styles.trophyIcon}>
-                <Ionicons name="trophy" size={22} color={theme.accent} />
-              </View>
-              <View>
-                <Text style={styles.pointsTitle}>Level {myPoints.level} · {myPoints.total_points} pts</Text>
-                <Text style={styles.pointsSub}>Rank #{myPoints.rank} · Tap for leaderboard</Text>
-              </View>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
-          </TouchableOpacity>
-        )}
-
-        {/* Tabs — horizontal scroll so all 4 fit */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabScroll} contentContainerStyle={styles.tabRow}>
-          {tabs.map(tab => (
-            <TouchableOpacity
-              key={tab.key}
-              style={[styles.tab, activeTab === tab.key && styles.tabActive]}
-              onPress={() => setActiveTab(tab.key)}
-            >
-              <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextActive]}>
-                {tab.label}{tab.count > 0 ? ` (${tab.count})` : ''}
-              </Text>
-            </TouchableOpacity>
+        {/* Tabs */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabRow} style={styles.tabScroll}>
+          {tabs.map((tab, i) => (
+            <Animated.View key={tab.key} entering={FadeInDown.delay(400 + i * 50).springify()}>
+              <TouchableOpacity
+                style={[styles.tab, activeTab === tab.key && styles.tabActive]}
+                onPress={() => setActiveTab(tab.key)}
+              >
+                <Ionicons name={tab.icon as any} size={14} color={activeTab === tab.key ? theme.accent : theme.textMuted} />
+                <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextActive]}>
+                  {tab.label}{tab.count > 0 ? ` (${tab.count})` : ''}
+                </Text>
+              </TouchableOpacity>
+            </Animated.View>
           ))}
         </ScrollView>
 
         {/* Tab: Events */}
         {activeTab === 'events' && (
-          myEvents.length > 0 ? myEvents.map(event => {
+          myEvents.length > 0 ? myEvents.map((event, idx) => {
             const catColor = Colors.categories[event.category as keyof typeof Colors.categories] || theme.primary;
             return (
-              <TouchableOpacity key={event.id} style={styles.card} onPress={() => router.push(`/event/${event.id}` as any)}>
-                <View style={[styles.cardIcon, { backgroundColor: catColor + '22' }]}>
-                  <Ionicons name="calendar" size={20} color={catColor} />
-                </View>
-                <View style={styles.cardInfo}>
-                  <Text style={styles.cardTitle} numberOfLines={1}>{event.title}</Text>
-                  <Text style={styles.cardMeta}>
-                    {new Date(event.start_time).toLocaleDateString([], { month: 'short', day: 'numeric' })} · {event.club_name}
-                  </Text>
-                </View>
-                <View style={styles.attendingBadge}>
-                  <Text style={styles.attendingText}>Attending</Text>
-                </View>
-              </TouchableOpacity>
+              <Animated.View key={event.id} entering={FadeInDown.delay(idx * 50).springify()}>
+                <TouchableOpacity style={styles.card} onPress={() => router.push(`/event/${event.id}` as any)}>
+                  <View style={[styles.cardIcon, { backgroundColor: catColor + '22' }]}>
+                    <Ionicons name="calendar" size={20} color={catColor} />
+                  </View>
+                  <View style={styles.cardInfo}>
+                    <Text style={styles.cardTitle} numberOfLines={1}>{event.title}</Text>
+                    <Text style={styles.cardMeta}>{new Date(event.start_time).toLocaleDateString([], { month: 'short', day: 'numeric' })} · {event.club_name}</Text>
+                  </View>
+                  <View style={styles.attendingBadge}>
+                    <Text style={styles.attendingText}>Going</Text>
+                  </View>
+                </TouchableOpacity>
+              </Animated.View>
             );
           }) : (
-            <View style={styles.tabEmpty}>
-              <Ionicons name="calendar-outline" size={32} color={theme.textMuted} />
-              <Text style={styles.tabEmptyText}>No events yet</Text>
+            <View style={styles.emptyTab}>
+              <Ionicons name="calendar-outline" size={36} color={theme.textMuted} />
+              <Text style={styles.emptyTabText}>RSVP to events to see them here</Text>
             </View>
           )
         )}
 
         {/* Tab: Following */}
         {activeTab === 'following' && (
-          followedClubs.length > 0 ? followedClubs.map((club: any) => (
-            <TouchableOpacity key={club.id} style={styles.card} onPress={() => router.push(`/club/${club.id}` as any)}>
-              <View style={[styles.clubIcon, { backgroundColor: theme.accent + '22' }]}>
-                {club.logo_url
-                  ? <Image source={{ uri: club.logo_url }} style={styles.clubLogo} />
-                  : <Text style={styles.clubInitial}>{club.name?.charAt(0)}</Text>
-                }
-              </View>
-              <View style={styles.cardInfo}>
-                <Text style={styles.cardTitle} numberOfLines={1}>{club.name}</Text>
-                <Text style={styles.cardMeta}>{club.follower_count || 0} followers</Text>
-              </View>
-            </TouchableOpacity>
+          followedClubs.length > 0 ? followedClubs.map((club: any, idx) => (
+            <Animated.View key={club.id} entering={FadeInDown.delay(idx * 50).springify()}>
+              <TouchableOpacity style={styles.card} onPress={() => router.push(`/club/${club.id}` as any)}>
+                <View style={[styles.clubIcon, { backgroundColor: theme.accent + '22' }]}>
+                  {club.logo_url
+                    ? <Image source={{ uri: club.logo_url }} style={styles.clubLogo} />
+                    : <Text style={styles.clubInitial}>{club.name?.charAt(0)}</Text>}
+                </View>
+                <View style={styles.cardInfo}>
+                  <Text style={styles.cardTitle} numberOfLines={1}>{club.name}</Text>
+                  <Text style={styles.cardMeta}>{club.follower_count || 0} followers · {club.category}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
+              </TouchableOpacity>
+            </Animated.View>
           )) : (
-            <View style={styles.tabEmpty}>
-              <Ionicons name="people-outline" size={32} color={theme.textMuted} />
-              <Text style={styles.tabEmptyText}>Not following any clubs yet</Text>
+            <View style={styles.emptyTab}>
+              <Ionicons name="people-outline" size={36} color={theme.textMuted} />
+              <Text style={styles.emptyTabText}>Follow clubs to see them here</Text>
             </View>
           )
         )}
@@ -253,34 +231,58 @@ export default function ProfileScreen() {
         {/* Tab: My Clubs */}
         {activeTab === 'clubs' && (
           <>
-            <TouchableOpacity style={styles.createClubBtn} onPress={() => router.push('/create-club' as any)}>
-              <Ionicons name="add-circle" size={20} color={theme.accent} />
-              <Text style={styles.createClubText}>Create a New Club</Text>
-            </TouchableOpacity>
+            <Animated.View entering={FadeInDown.delay(0).springify()}>
+              <TouchableOpacity style={styles.highlighterLinkCard} onPress={handleHighlanderLink} activeOpacity={0.85}>
+                <LinearGradient colors={[theme.primary + '22', theme.cyan + '11']} style={styles.highlighterLinkGrad} />
+                <Ionicons name="link" size={20} color={theme.cyan} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.highlighterLinkTitle}>Verify via Highlander Link</Text>
+                  <Text style={styles.highlighterLinkSub}>Confirm club membership on UCR's official portal</Text>
+                </View>
+                <Ionicons name="open-outline" size={18} color={theme.textMuted} />
+              </TouchableOpacity>
+            </Animated.View>
 
-            {myClubs.length > 0 ? myClubs.map((club: any) => (
-              <View key={club.id} style={styles.card}>
-                <View style={[styles.clubIcon, { backgroundColor: theme.accent + '22' }]}>
-                  {club.logo_url
-                    ? <Image source={{ uri: club.logo_url }} style={styles.clubLogo} />
-                    : <Text style={styles.clubInitial}>{club.name?.charAt(0)}</Text>
-                  }
-                </View>
-                <View style={styles.cardInfo}>
-                  <Text style={styles.cardTitle} numberOfLines={1}>{club.name}</Text>
-                  <Text style={styles.cardMeta}>{club.follower_count || 0} followers · {club.user_role}</Text>
-                </View>
-                <TouchableOpacity style={styles.manageBtn} onPress={() => router.push(`/admin-panel/${club.id}` as any)}>
-                  <Text style={styles.manageBtnText}>Manage</Text>
-                </TouchableOpacity>
-              </View>
-            )) : (
-              <View style={styles.tabEmpty}>
-                <Ionicons name="shield-outline" size={32} color={theme.textMuted} />
-                <Text style={styles.tabEmptyText}>You don't manage any clubs yet</Text>
-                <Text style={[styles.tabEmptyText, { fontSize: FontSize.xs, marginTop: 4 }]}>
-                  Create one above or ask a president to invite you as staff
-                </Text>
+            <Animated.View entering={FadeInDown.delay(60).springify()}>
+              <TouchableOpacity style={styles.createClubBtn} onPress={() => router.push('/create-club' as any)}>
+                <Ionicons name="add-circle-outline" size={18} color={theme.accent} />
+                <Text style={styles.createClubText}>Create a New Club</Text>
+              </TouchableOpacity>
+            </Animated.View>
+
+            {myClubs.length > 0 ? myClubs.map((club: any, idx) => {
+              const isOfficer = OFFICER_ROLES.has(club.user_role);
+              return (
+                <Animated.View key={club.id} entering={FadeInDown.delay(120 + idx * 50).springify()}>
+                  <View style={styles.card}>
+                    <View style={[styles.clubIcon, { backgroundColor: theme.accent + '22' }]}>
+                      {club.logo_url
+                        ? <Image source={{ uri: club.logo_url }} style={styles.clubLogo} />
+                        : <Text style={styles.clubInitial}>{club.name?.charAt(0)}</Text>}
+                    </View>
+                    <View style={styles.cardInfo}>
+                      <Text style={styles.cardTitle} numberOfLines={1}>{club.name}</Text>
+                      <Text style={styles.cardMeta}>{club.follower_count || 0} followers · {club.user_role}</Text>
+                    </View>
+                    {isOfficer && (
+                      <TouchableOpacity
+                        style={styles.postEventBtn}
+                        onPress={() => router.push({ pathname: '/create-event', params: { club_id: club.id, club_name: club.name } } as any)}
+                      >
+                        <LinearGradient colors={Gradients.accent} style={styles.postEventBtnGrad}>
+                          <Ionicons name="add" size={14} color="#000" />
+                          <Text style={styles.postEventBtnText}>Post</Text>
+                        </LinearGradient>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </Animated.View>
+              );
+            }) : (
+              <View style={styles.emptyTab}>
+                <Ionicons name="shield-outline" size={36} color={theme.textMuted} />
+                <Text style={styles.emptyTabText}>You're not a member of any clubs yet</Text>
+                <Text style={styles.emptyTabSub}>Create a club or get invited by an officer</Text>
               </View>
             )}
           </>
@@ -288,163 +290,171 @@ export default function ProfileScreen() {
 
         {/* Tab: Friends */}
         {activeTab === 'friends' && (
-          <>
-            <View style={styles.addFriendRow}>
-              <TextInput
-                style={styles.friendInput}
-                placeholder="friend@ucr.edu"
-                placeholderTextColor={theme.textMuted}
-                value={friendEmail}
-                onChangeText={setFriendEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
-              <TouchableOpacity style={styles.addBtn} onPress={handleAddFriend}>
-                <Ionicons name="person-add" size={16} color="#FFF" />
-              </TouchableOpacity>
-            </View>
-            {friends.length > 0 ? friends.map((f: any) => (
-              <View key={f.id} style={styles.card}>
+          friends.length > 0 ? friends.map((f: any, idx) => (
+            <Animated.View key={f.id} entering={FadeInDown.delay(idx * 50).springify()}>
+              <View style={styles.card}>
                 <View style={styles.friendAvatar}>
                   {f.avatar_url
                     ? <Image source={{ uri: f.avatar_url }} style={styles.friendAvatarImg} />
-                    : <Text style={styles.friendInitial}>{f.display_name?.charAt(0) || f.email?.charAt(0)}</Text>
-                  }
+                    : <Text style={styles.friendInitial}>{f.name?.charAt(0) || '?'}</Text>}
                 </View>
                 <View style={styles.cardInfo}>
-                  <Text style={styles.cardTitle}>{f.display_name || 'Highlander'}</Text>
+                  <Text style={styles.cardTitle}>{f.name || 'Highlander'}</Text>
                   <Text style={styles.cardMeta}>{f.email}</Text>
                 </View>
               </View>
-            )) : (
-              <View style={styles.tabEmpty}>
-                <Ionicons name="people-outline" size={32} color={theme.textMuted} />
-                <Text style={styles.tabEmptyText}>Add friends with their @ucr.edu email</Text>
-              </View>
-            )}
-          </>
+            </Animated.View>
+          )) : (
+            <View style={styles.emptyTab}>
+              <Ionicons name="people-outline" size={36} color={theme.textMuted} />
+              <Text style={styles.emptyTabText}>No friends yet</Text>
+              <Text style={styles.emptyTabSub}>Friends are added by club officers through the member system</Text>
+            </View>
+          )
         )}
 
         {/* Sign Out */}
-        <TouchableOpacity
-          style={styles.signOutBtn}
-          onPress={() => {
-            Alert.alert('Sign Out', 'Are you sure?', [
-              { text: 'Cancel', style: 'cancel' },
-              {
-                text: 'Sign Out', style: 'destructive',
-                onPress: async () => {
-                  await AsyncStorage.removeItem('auth_token');
-                  setAuthToken(null);
-                  router.replace('/(auth)/login' as any);
+        <Animated.View entering={FadeIn.delay(600)}>
+          <TouchableOpacity
+            style={styles.signOutBtn}
+            onPress={() => {
+              Alert.alert('Sign Out', 'Are you sure?', [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Sign Out', style: 'destructive',
+                  onPress: async () => {
+                    await AsyncStorage.removeItem('auth_token');
+                    setAuthToken(null);
+                    router.replace('/(auth)/login' as any);
+                  },
                 },
-              },
-            ]);
-          }}
-        >
-          <Text style={styles.signOutText}>Sign out</Text>
-        </TouchableOpacity>
+              ]);
+            }}
+          >
+            <Ionicons name="log-out-outline" size={18} color={theme.danger} />
+            <Text style={styles.signOutText}>Sign Out</Text>
+          </TouchableOpacity>
+        </Animated.View>
       </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.dark.background },
+  container: { flex: 1, backgroundColor: theme.background },
   centered: { justifyContent: 'center', alignItems: 'center' },
 
-  signInAvatar: { width: 80, height: 80, borderRadius: 40, backgroundColor: Colors.dark.surface, justifyContent: 'center', alignItems: 'center', marginBottom: Spacing.md },
-  signInTitle: { color: Colors.dark.text, fontSize: FontSize.lg, fontWeight: '600', marginBottom: Spacing.md },
-  signInBtn: { backgroundColor: Colors.dark.primary, paddingHorizontal: Spacing.xl, paddingVertical: Spacing.md, borderRadius: BorderRadius.full },
-  signInBtnText: { color: '#FFF', fontSize: FontSize.md, fontWeight: '600' },
+  signInIcon: { width: 80, height: 80, borderRadius: 40, backgroundColor: Glass.background, borderWidth: 1, borderColor: Glass.border, justifyContent: 'center', alignItems: 'center', marginBottom: Spacing.md },
+  signInTitle: { fontFamily: Fonts.heading, color: theme.text, fontSize: FontSize.lg, marginBottom: Spacing.lg },
+  signInBtn: { borderRadius: BorderRadius.md, overflow: 'hidden', ...Shadows.glow('#1E6AFF') },
+  signInBtnGrad: { paddingHorizontal: Spacing.xl, paddingVertical: Spacing.md },
+  signInBtnText: { fontFamily: Fonts.headingMed, color: '#FFF', fontSize: FontSize.md },
 
-  profileHeader: { alignItems: 'center', paddingTop: 60, paddingBottom: Spacing.md },
-  settingsBtn: { position: 'absolute', top: 60, right: Spacing.md, padding: 4 },
-  headerTitle: { color: Colors.dark.textSecondary, fontSize: FontSize.sm, fontWeight: '500', marginBottom: Spacing.md },
+  headerGrad: { position: 'absolute', top: 0, left: 0, right: 0, height: 250 },
 
-  avatarRing: {
-    width: 88, height: 88, borderRadius: 44, borderWidth: 3, borderColor: Colors.dark.accent,
-    justifyContent: 'center', alignItems: 'center', marginBottom: Spacing.sm, position: 'relative',
+  profileHeader: { alignItems: 'center', paddingTop: Platform.OS === 'ios' ? 60 : 40, paddingBottom: Spacing.lg },
+
+  avatarWrap: { position: 'relative', marginBottom: Spacing.md },
+  avatarGlowRing: {
+    width: 96, height: 96, borderRadius: 48,
+    borderWidth: 2.5, borderColor: theme.accent + '88',
+    justifyContent: 'center', alignItems: 'center',
+    ...Shadows.glow('#FFB800'),
   },
-  avatar: { width: 76, height: 76, borderRadius: 38, backgroundColor: Colors.dark.surfaceElevated, justifyContent: 'center', alignItems: 'center' },
-  avatarImage: { width: 76, height: 76, borderRadius: 38 },
-  avatarLetter: { color: Colors.dark.accent, fontSize: FontSize.hero, fontWeight: '700' },
+  avatar: { width: 84, height: 84, borderRadius: 42, backgroundColor: theme.surfaceElevated, justifyContent: 'center', alignItems: 'center' },
+  avatarImg: { width: 84, height: 84, borderRadius: 42 },
+  avatarLetter: { fontFamily: Fonts.heading, color: theme.accent, fontSize: FontSize.xxxl },
   cameraBadge: {
-    position: 'absolute', bottom: 0, right: 0,
-    width: 22, height: 22, borderRadius: 11, backgroundColor: Colors.dark.accent,
-    justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: Colors.dark.background,
+    position: 'absolute', bottom: 2, right: 2,
+    width: 26, height: 26, borderRadius: 13, backgroundColor: theme.accent,
+    justifyContent: 'center', alignItems: 'center',
+    borderWidth: 2, borderColor: theme.background,
+    ...Shadows.soft,
   },
 
-  displayName: { color: Colors.dark.text, fontSize: FontSize.xl, fontWeight: '700' },
+  displayName: { fontFamily: Fonts.heading, color: theme.text, fontSize: FontSize.xl },
   emailRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, marginTop: 4 },
-  email: { color: Colors.dark.textSecondary, fontSize: FontSize.sm },
-  verifiedBadge: { backgroundColor: Colors.dark.accent, paddingHorizontal: 6, paddingVertical: 2, borderRadius: BorderRadius.full },
-  verifiedText: { color: '#FFF', fontSize: 10, fontWeight: '700' },
+  email: { fontFamily: Fonts.body, color: theme.textSecondary, fontSize: FontSize.sm },
+  ucrBadge: { borderRadius: BorderRadius.full, overflow: 'hidden' },
+  ucrBadgeGrad: { paddingHorizontal: 8, paddingVertical: 2 },
+  ucrBadgeText: { fontFamily: Fonts.heading, color: '#FFF', fontSize: 9, letterSpacing: 0.5 },
 
-  statsRow: { flexDirection: 'row', marginTop: Spacing.md, paddingHorizontal: Spacing.xl },
-  stat: { flex: 1, alignItems: 'center', paddingVertical: Spacing.sm },
-  statBorder: { borderRightWidth: 1, borderRightColor: Colors.dark.border },
-  statNum: { color: Colors.dark.text, fontSize: FontSize.xl, fontWeight: '700' },
-  statLabel: { color: Colors.dark.textSecondary, fontSize: FontSize.xs, marginTop: 2 },
-
-  pointsCard: {
-    marginHorizontal: Spacing.md, marginBottom: Spacing.md, backgroundColor: Colors.dark.surface,
-    borderRadius: BorderRadius.md, padding: Spacing.md, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+  statsCard: {
+    flexDirection: 'row', marginTop: Spacing.lg, marginHorizontal: Spacing.xl,
+    backgroundColor: Glass.background, borderRadius: BorderRadius.lg,
+    borderWidth: 1, borderColor: Glass.border, paddingVertical: Spacing.md,
+    ...Shadows.card,
   },
-  pointsLeft: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-  trophyIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: Colors.dark.accent + '22', justifyContent: 'center', alignItems: 'center' },
-  pointsTitle: { color: Colors.dark.text, fontSize: FontSize.md, fontWeight: '700' },
-  pointsSub: { color: Colors.dark.textSecondary, fontSize: FontSize.xs },
+  stat: { flex: 1, alignItems: 'center' },
+  statDivider: { borderRightWidth: 1, borderRightColor: Glass.border },
+  statNum: { fontFamily: Fonts.heading, color: theme.text, fontSize: FontSize.xl },
+  statLabel: { fontFamily: Fonts.body, color: theme.textMuted, fontSize: FontSize.xs, marginTop: 2 },
 
   tabScroll: { marginBottom: Spacing.sm },
-  tabRow: { flexDirection: 'row', paddingHorizontal: Spacing.md, gap: Spacing.xs },
-  tab: { paddingVertical: Spacing.sm, paddingHorizontal: Spacing.md, borderRadius: BorderRadius.md, backgroundColor: Colors.dark.surface },
-  tabActive: { backgroundColor: Colors.dark.surfaceElevated },
-  tabText: { color: Colors.dark.textMuted, fontSize: FontSize.sm, fontWeight: '500' },
-  tabTextActive: { color: Colors.dark.text, fontWeight: '600' },
+  tabRow: { paddingHorizontal: Spacing.md, gap: Spacing.xs, flexDirection: 'row' },
+  tab: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    paddingVertical: Spacing.sm, paddingHorizontal: Spacing.md,
+    borderRadius: BorderRadius.full, backgroundColor: Glass.background,
+    borderWidth: 1, borderColor: Glass.border,
+  },
+  tabActive: { backgroundColor: theme.accent + '18', borderColor: theme.accent + '55' },
+  tabText: { fontFamily: Fonts.body, color: theme.textMuted, fontSize: FontSize.sm },
+  tabTextActive: { fontFamily: Fonts.headingMed, color: theme.accent },
 
   card: {
     flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
     marginHorizontal: Spacing.md, marginBottom: Spacing.sm, padding: Spacing.md,
-    backgroundColor: Colors.dark.surface, borderRadius: BorderRadius.md,
+    backgroundColor: Glass.background, borderRadius: BorderRadius.md,
+    borderWidth: 1, borderColor: Glass.border,
   },
   cardIcon: { width: 44, height: 44, borderRadius: BorderRadius.sm, justifyContent: 'center', alignItems: 'center' },
   cardInfo: { flex: 1 },
-  cardTitle: { color: Colors.dark.text, fontSize: FontSize.md, fontWeight: '600' },
-  cardMeta: { color: Colors.dark.textSecondary, fontSize: FontSize.xs, marginTop: 2 },
-  attendingBadge: { backgroundColor: Colors.dark.success + '22', paddingHorizontal: 8, paddingVertical: 4, borderRadius: BorderRadius.full },
-  attendingText: { color: Colors.dark.success, fontSize: 11, fontWeight: '600' },
+  cardTitle: { fontFamily: Fonts.headingMed, color: theme.text, fontSize: FontSize.md },
+  cardMeta: { fontFamily: Fonts.body, color: theme.textSecondary, fontSize: FontSize.xs, marginTop: 2 },
+  attendingBadge: { backgroundColor: theme.success + '22', paddingHorizontal: 8, paddingVertical: 4, borderRadius: BorderRadius.full },
+  attendingText: { fontFamily: Fonts.headingMed, color: theme.success, fontSize: 11 },
 
   clubIcon: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
   clubLogo: { width: 44, height: 44, borderRadius: 22 },
-  clubInitial: { color: Colors.dark.accent, fontSize: FontSize.lg, fontWeight: '700' },
+  clubInitial: { fontFamily: Fonts.heading, color: theme.accent, fontSize: FontSize.lg },
+
+  highlighterLinkCard: {
+    flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
+    marginHorizontal: Spacing.md, marginBottom: Spacing.sm,
+    padding: Spacing.md, borderRadius: BorderRadius.md,
+    borderWidth: 1, borderColor: 'rgba(0,229,255,0.2)',
+    overflow: 'hidden',
+  },
+  highlighterLinkGrad: { ...StyleSheet.absoluteFillObject },
+  highlighterLinkTitle: { fontFamily: Fonts.headingMed, color: theme.cyan, fontSize: FontSize.md },
+  highlighterLinkSub: { fontFamily: Fonts.body, color: theme.textMuted, fontSize: FontSize.xs, marginTop: 1 },
 
   createClubBtn: {
     flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
-    marginHorizontal: Spacing.md, marginBottom: Spacing.md, padding: Spacing.md,
-    backgroundColor: Colors.dark.surface, borderRadius: BorderRadius.md,
-    borderWidth: 1, borderColor: Colors.dark.accent + '44', borderStyle: 'dashed',
+    marginHorizontal: Spacing.md, marginBottom: Spacing.sm, padding: Spacing.md,
+    backgroundColor: Glass.background, borderRadius: BorderRadius.md,
+    borderWidth: 1, borderColor: theme.accent + '33', borderStyle: 'dashed',
   },
-  createClubText: { color: Colors.dark.accent, fontSize: FontSize.md, fontWeight: '600' },
+  createClubText: { fontFamily: Fonts.headingMed, color: theme.accent, fontSize: FontSize.md },
 
-  manageBtn: { backgroundColor: Colors.dark.accent + '22', paddingHorizontal: Spacing.sm, paddingVertical: 6, borderRadius: BorderRadius.sm },
-  manageBtnText: { color: Colors.dark.accent, fontSize: FontSize.xs, fontWeight: '700' },
+  postEventBtn: { borderRadius: BorderRadius.sm, overflow: 'hidden' },
+  postEventBtnGrad: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 10, paddingVertical: 6 },
+  postEventBtnText: { fontFamily: Fonts.heading, color: '#000', fontSize: FontSize.xs },
 
-  friendAvatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.dark.surfaceElevated, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
-  friendAvatarImg: { width: 40, height: 40, borderRadius: 20 },
-  friendInitial: { color: Colors.dark.text, fontSize: FontSize.md, fontWeight: '600' },
+  friendAvatar: { width: 42, height: 42, borderRadius: 21, backgroundColor: theme.surfaceElevated, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+  friendAvatarImg: { width: 42, height: 42, borderRadius: 21 },
+  friendInitial: { fontFamily: Fonts.headingMed, color: theme.text, fontSize: FontSize.lg },
 
-  addFriendRow: { flexDirection: 'row', marginHorizontal: Spacing.md, marginBottom: Spacing.md, gap: Spacing.sm },
-  friendInput: {
-    flex: 1, backgroundColor: Colors.dark.surface, borderRadius: BorderRadius.md,
-    paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, color: Colors.dark.text,
-    borderWidth: 1, borderColor: Colors.dark.border,
+  emptyTab: { alignItems: 'center', marginTop: 48, paddingHorizontal: Spacing.xl },
+  emptyTabText: { fontFamily: Fonts.headingMed, color: theme.textSecondary, fontSize: FontSize.md, marginTop: Spacing.sm, textAlign: 'center' },
+  emptyTabSub: { fontFamily: Fonts.body, color: theme.textMuted, fontSize: FontSize.sm, marginTop: 4, textAlign: 'center' },
+
+  signOutBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm,
+    marginHorizontal: Spacing.md, marginTop: Spacing.xl, paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.md, borderWidth: 1, borderColor: theme.danger + '33',
+    backgroundColor: theme.danger + '08',
   },
-  addBtn: { backgroundColor: Colors.dark.accent, width: 44, borderRadius: BorderRadius.md, justifyContent: 'center', alignItems: 'center' },
-
-  tabEmpty: { alignItems: 'center', marginTop: 40, paddingHorizontal: Spacing.xl },
-  tabEmptyText: { color: Colors.dark.textSecondary, fontSize: FontSize.sm, marginTop: Spacing.sm, textAlign: 'center' },
-
-  signOutBtn: { marginHorizontal: Spacing.md, marginTop: Spacing.lg, paddingVertical: Spacing.md, borderRadius: BorderRadius.md, borderWidth: 1, borderColor: Colors.dark.border, alignItems: 'center' },
-  signOutText: { color: Colors.dark.textSecondary, fontSize: FontSize.md },
+  signOutText: { fontFamily: Fonts.headingMed, color: theme.danger, fontSize: FontSize.md },
 });

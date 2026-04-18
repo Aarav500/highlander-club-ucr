@@ -1,5 +1,4 @@
 import { DarkTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
 import { Stack, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Linking from 'expo-linking';
@@ -8,24 +7,44 @@ import { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { setAuthToken } from '../services/api';
 import { registerForPushNotifications, setupNotificationListeners } from '../services/notifications';
+import {
+  useFonts,
+  SpaceGrotesk_400Regular,
+  SpaceGrotesk_500Medium,
+  SpaceGrotesk_600SemiBold,
+  SpaceGrotesk_700Bold,
+} from '@expo-google-fonts/space-grotesk';
+import {
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+} from '@expo-google-fonts/inter';
 
 SplashScreen.preventAutoHideAsync();
 
-const UniPulseDark = {
+const HighlanderDark = {
   ...DarkTheme,
   colors: {
     ...DarkTheme.colors,
-    primary: '#2D6CC0',
-    background: '#0A0E1A',
-    card: '#141828',
+    primary: '#1E6AFF',
+    background: '#050810',
+    card: '#0D1221',
     text: '#FFFFFF',
-    border: '#262C42',
-    notification: '#F1AB00',
+    border: '#1A2240',
+    notification: '#FFB800',
   },
 };
 
 export default function RootLayout() {
-  const [loaded] = useFonts({});
+  const [fontsLoaded] = useFonts({
+    SpaceGrotesk_400Regular,
+    SpaceGrotesk_500Medium,
+    SpaceGrotesk_600SemiBold,
+    SpaceGrotesk_700Bold,
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+  });
   const [isReady, setIsReady] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const router = useRouter();
@@ -50,57 +69,112 @@ export default function RootLayout() {
   // Push notifications setup
   useEffect(() => {
     if (!isReady || !isLoggedIn) return;
-
     registerForPushNotifications();
     const cleanup = setupNotificationListeners();
     return cleanup;
   }, [isReady, isLoggedIn]);
 
-  // Deep link handling — unipulse://event/:id
+  // Deep link handling — highlanderevents://event/:id
   useEffect(() => {
     if (!isReady) return;
-
     const handleDeepLink = (event: { url: string }) => {
       const parsed = Linking.parse(event.url);
       if (parsed.hostname === 'event' && parsed.path) {
         router.push(`/event/${parsed.path}` as any);
       }
     };
-
-    // Handle link that opened the app
     Linking.getInitialURL().then((url) => {
       if (url) handleDeepLink({ url });
     });
-
-    // Handle links while app is open
     const subscription = Linking.addEventListener('url', handleDeepLink);
     return () => subscription.remove();
   }, [isReady]);
 
   useEffect(() => {
-    if (loaded && isReady) {
+    if (fontsLoaded && isReady) {
       SplashScreen.hideAsync();
     }
-  }, [loaded, isReady]);
+  }, [fontsLoaded, isReady]);
 
-  if (!loaded || !isReady) {
+  if (!fontsLoaded || !isReady) {
     return null;
   }
 
   return (
-    <ThemeProvider value={UniPulseDark}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-        <Stack.Screen name="event/[id]" options={{ headerShown: false, presentation: 'modal' }} />
-        <Stack.Screen name="club/[id]" options={{ headerShown: false, presentation: 'modal' }} />
-        <Stack.Screen name="club-dashboard/[id]" options={{ headerShown: false, presentation: 'modal' }} />
-        <Stack.Screen name="admin-panel/[id]" options={{ headerShown: false, presentation: 'modal' }} />
-        <Stack.Screen name="club-chat/[id]" options={{ headerShown: false, presentation: 'modal' }} />
-        <Stack.Screen name="event-ticket/[id]" options={{ headerShown: false, presentation: 'modal' }} />
-        <Stack.Screen name="leaderboard" options={{ headerShown: false, presentation: 'modal' }} />
-        <Stack.Screen name="create-event" options={{ headerShown: false, presentation: 'modal' }} />
-        <Stack.Screen name="create-club" options={{ headerShown: false, presentation: 'modal' }} />
+    <ThemeProvider value={HighlanderDark}>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          animation: 'fade',
+          animationDuration: 250,
+          contentStyle: { backgroundColor: '#050810' },
+        }}
+      >
+        <Stack.Screen name="(tabs)" options={{ headerShown: false, animation: 'fade' }} />
+        <Stack.Screen name="(auth)" options={{ headerShown: false, animation: 'fade' }} />
+        <Stack.Screen
+          name="event/[id]"
+          options={{
+            headerShown: false,
+            presentation: 'modal',
+            animation: 'slide_from_bottom',
+            animationDuration: 350,
+          }}
+        />
+        <Stack.Screen
+          name="club/[id]"
+          options={{
+            headerShown: false,
+            presentation: 'modal',
+            animation: 'slide_from_bottom',
+            animationDuration: 350,
+          }}
+        />
+        <Stack.Screen
+          name="club-dashboard/[id]"
+          options={{
+            headerShown: false,
+            presentation: 'modal',
+            animation: 'slide_from_bottom',
+            animationDuration: 350,
+          }}
+        />
+        <Stack.Screen
+          name="club-chat/[id]"
+          options={{
+            headerShown: false,
+            presentation: 'modal',
+            animation: 'slide_from_right',
+            animationDuration: 300,
+          }}
+        />
+        <Stack.Screen
+          name="event-ticket/[id]"
+          options={{
+            headerShown: false,
+            presentation: 'modal',
+            animation: 'slide_from_bottom',
+            animationDuration: 350,
+          }}
+        />
+        <Stack.Screen
+          name="create-event"
+          options={{
+            headerShown: false,
+            presentation: 'modal',
+            animation: 'slide_from_bottom',
+            animationDuration: 350,
+          }}
+        />
+        <Stack.Screen
+          name="create-club"
+          options={{
+            headerShown: false,
+            presentation: 'modal',
+            animation: 'slide_from_bottom',
+            animationDuration: 350,
+          }}
+        />
         <Stack.Screen name="+not-found" />
       </Stack>
       <StatusBar style="light" />

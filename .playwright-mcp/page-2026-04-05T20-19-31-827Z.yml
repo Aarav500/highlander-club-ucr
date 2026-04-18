@@ -1,0 +1,14 @@
+- generic [ref=e8]:
+  - progressbar [ref=e14]:
+    - img [ref=e16]
+  - tablist [ref=e20]:
+    - tab "Feed" [ref=e22] [cursor=pointer]:
+      - generic [ref=e26]: Feed
+    - tab "Calendar" [ref=e28] [cursor=pointer]:
+      - generic [ref=e32]: Calendar
+    - tab "Map" [ref=e34] [cursor=pointer]:
+      - generic [ref=e38]: Map
+    - tab "Search" [ref=e40] [cursor=pointer]:
+      - generic [ref=e44]: Search
+    - tab "Profile" [selected] [ref=e46] [cursor=pointer]:
+      - generic [ref=e50]: Profile

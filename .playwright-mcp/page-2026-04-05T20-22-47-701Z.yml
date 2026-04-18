@@ -1,0 +1,13 @@
+- generic [ref=e13]:
+  - generic [ref=e14]:
+    - generic [ref=e26]: 
+    - generic [ref=e16]: Highlander Events
+    - generic [ref=e17]: Never miss a UCR event again.
+  - generic [ref=e18]:
+    - generic [ref=e19]: Sign in with your UCR email
+    - generic [ref=e20]:
+      - generic [ref=e21]: 
+      - textbox "yourname@ucr.edu" [ref=e22]: ashah264@ucr.edu
+    - generic [ref=e27]: Not found
+    - generic [ref=e28] [cursor=pointer]: Send Verification Code
+  - generic [ref=e25]: Only UCR students with a valid @ucr.edu email can sign in.

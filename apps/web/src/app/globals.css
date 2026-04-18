@@ -1,0 +1,126 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  
+  /* Glassmorphism custom utilities */
+  --color-glass-bg: rgba(13, 18, 33, 0.45);
+  --color-glass-strong: rgba(13, 18, 33, 0.75);
+  --color-glass-border: rgba(255, 255, 255, 0.08);
+  --color-glass-border-focus: rgba(255, 255, 255, 0.2);
+  --color-ucr-blue: #1E6AFF;
+  --color-ucr-gold: #FFB800;
+  --color-ucr-cyan: #00E5FF;
+}
+
+:root, .dark {
+  /* Deep Obsidian Base */
+  --background: 220 50% 3%; /* #030508 */
+  --foreground: 210 40% 98%;
+
+  /* Glass Card Surface */
+  --card: 225 43% 9%; /* #0D1221 */
+  --card-foreground: 210 40% 98%;
+
+  --popover: 225 43% 9%;
+  --popover-foreground: 210 40% 98%;
+
+  /* UCR Blue */
+  --primary: 220 100% 56%; 
+  --primary-foreground: 210 40% 98%;
+
+  /* Subtle glass surfaces */
+  --secondary: 225 43% 15%;
+  --secondary-foreground: 210 40% 98%;
+
+  --muted: 225 43% 15%;
+  --muted-foreground: 215 20.2% 65.1%;
+
+  /* UCR Gold */
+  --accent: 43 100% 50%;
+  --accent-foreground: 220 50% 3%;
+
+  --destructive: 351 100% 62%; /* #FF3D5A */
+  --destructive-foreground: 210 40% 98%;
+
+  /* Glass Borders */
+  --border: 225 30% 18%; /* Subtle edge */
+  --input: 225 30% 18%;
+  --ring: 220 100% 56%;
+
+  --radius: 1rem;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  
+  html {
+    color-scheme: dark;
+  }
+  
+  body {
+    @apply bg-background text-foreground antialiased selection:bg-primary/30 selection:text-primary-foreground min-h-screen overflow-x-hidden;
+    /* Adding geometric font style (assuming Outfit/Plus Jakarta Sans setup) */
+  }
+
+  /* Custom Scrollbar for premium feel */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-white/10 rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-white/20;
+  }
+}
+
+/* Glassmorphism Utilities */
+@layer utilities {
+  .glass-panel {
+    @apply bg-glass-bg backdrop-blur-[24px] border border-glass-border shadow-[0_8px_32px_rgba(0,0,0,0.4)] relative overflow-hidden;
+  }
+  
+  .glass-panel::before {
+    content: '';
+    @apply absolute inset-0 rounded-[inherit] border-t border-white/10 pointer-events-none;
+  }
+
+  .glass-input {
+    @apply bg-glass-bg border border-glass-border text-foreground rounded-lg focus:border-glass-border-focus focus:ring-1 focus:ring-primary/50 transition-all duration-300;
+  }
+}

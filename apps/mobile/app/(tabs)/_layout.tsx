@@ -1,6 +1,70 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/Colors';
+import { Platform, View, StyleSheet } from 'react-native';
+import { Colors, Fonts, Gradients, Glass } from '../../constants/Colors';
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
+import Animated, {
+  useAnimatedStyle,
+  withSpring,
+  useSharedValue,
+  interpolate,
+} from 'react-native-reanimated';
+
+function TabBarBackground() {
+  if (Platform.OS === 'ios') {
+    return (
+      <BlurView
+        tint="dark"
+        intensity={Glass.blurIntensityStrong}
+        style={StyleSheet.absoluteFill}
+      />
+    );
+  }
+  // Android + Web fallback: gradient glass effect
+  return (
+    <View style={StyleSheet.absoluteFill}>
+      <LinearGradient
+        colors={Gradients.tabBarGlass}
+        style={StyleSheet.absoluteFill}
+      />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: Glass.backgroundStrong }]} />
+    </View>
+  );
+}
+
+// Animated tab icon with scale + glow
+function AnimatedTabIcon({
+  name,
+  focusedName,
+  color,
+  focused,
+}: {
+  name: string;
+  focusedName: string;
+  color: string;
+  focused: boolean;
+}) {
+  const theme = Colors.dark;
+
+  return (
+    <View style={styles.iconContainer}>
+      {/* Glow ring behind active icon */}
+      {focused && (
+        <View style={[styles.iconGlow, { backgroundColor: color + '25' }]} />
+      )}
+      <Ionicons
+        name={(focused ? focusedName : name) as any}
+        size={focused ? 26 : 24}
+        color={color}
+      />
+      {/* Active dot indicator */}
+      {focused && (
+        <View style={[styles.activeDot, { backgroundColor: color }]} />
+      )}
+    </View>
+  );
+}
 
 export default function TabLayout() {
   const theme = Colors.dark;
@@ -9,19 +73,39 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: theme.tabIconSelected,
+        tabBarActiveTintColor: theme.accent,
         tabBarInactiveTintColor: theme.tabIconDefault,
+        tabBarBackground: () => <TabBarBackground />,
         tabBarStyle: {
-          backgroundColor: theme.tabBar,
-          borderTopColor: theme.border,
-          borderTopWidth: 1,
-          height: 60,
-          paddingBottom: 8,
-          paddingTop: 4,
+          position: 'absolute',
+          bottom: Platform.OS === 'ios' ? 20 : 12,
+          left: 16,
+          right: 16,
+          backgroundColor: Platform.OS === 'ios' ? 'transparent' : 'rgba(8,16,30,0.95)',
+          borderTopWidth: 0,
+          borderRadius: 24,
+          height: Platform.OS === 'ios' ? 72 : 64,
+          paddingBottom: Platform.OS === 'ios' ? 12 : 8,
+          paddingTop: 8,
+          elevation: 0,
+          borderWidth: 1,
+          borderColor: Glass.border,
+          overflow: 'hidden',
+          // Glass shadow
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -4 },
+          shadowOpacity: 0.3,
+          shadowRadius: 20,
         },
         tabBarLabelStyle: {
-          fontSize: 11,
+          fontSize: 10,
           fontWeight: '600',
+          letterSpacing: 0.3,
+          fontFamily: Fonts.headingMed,
+          marginTop: 2,
+        },
+        tabBarItemStyle: {
+          paddingTop: 4,
         },
       }}
     >
@@ -29,8 +113,8 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Feed',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="flame" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <AnimatedTabIcon name="flame-outline" focusedName="flame" color={color} focused={focused} />
           ),
         }}
       />
@@ -38,8 +122,8 @@ export default function TabLayout() {
         name="calendar"
         options={{
           title: 'Calendar',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="calendar" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <AnimatedTabIcon name="calendar-outline" focusedName="calendar" color={color} focused={focused} />
           ),
         }}
       />
@@ -47,17 +131,17 @@ export default function TabLayout() {
         name="map"
         options={{
           title: 'Map',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="map" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <AnimatedTabIcon name="map-outline" focusedName="map" color={color} focused={focused} />
           ),
         }}
       />
       <Tabs.Screen
         name="search"
         options={{
-          title: 'Search',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="search" size={size} color={color} />
+          title: 'Explore',
+          tabBarIcon: ({ color, focused }) => (
+            <AnimatedTabIcon name="compass-outline" focusedName="compass" color={color} focused={focused} />
           ),
         }}
       />
@@ -65,11 +149,35 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: 'Profile',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person" size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <AnimatedTabIcon name="person-circle-outline" focusedName="person-circle" color={color} focused={focused} />
           ),
         }}
       />
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  iconContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 44,
+    height: 36,
+    position: 'relative',
+  },
+  iconGlow: {
+    position: 'absolute',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    top: -2,
+  },
+  activeDot: {
+    position: 'absolute',
+    bottom: -4,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+  },
+});

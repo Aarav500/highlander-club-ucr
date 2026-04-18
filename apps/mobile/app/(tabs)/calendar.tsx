@@ -1,16 +1,20 @@
 import { useState, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, FlatList,
-  ActivityIndicator, Alert, Dimensions,
+  ActivityIndicator, Alert, Dimensions, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Colors, Spacing, BorderRadius, FontSize } from '../../constants/Colors';
+import Animated, { FadeInDown, FadeIn, ZoomIn } from 'react-native-reanimated';
+import { Colors, Spacing, BorderRadius, FontSize, Fonts, Glass, Shadows, AnimTiming } from '../../constants/Colors';
+import { useSpringPress, useFadeIn } from '../../constants/animations';
 import { events as eventsApi } from '../../services/api';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
+const theme = Colors.dark;
+const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 
 function getWeekDays(offset: number) {
   const now = new Date();
@@ -25,7 +29,6 @@ function getWeekDays(offset: number) {
 
 export default function CalendarScreen() {
   const router = useRouter();
-  const theme = Colors.dark;
   const [weekOffset, setWeekOffset] = useState(0);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [events, setEvents] = useState<any[]>([]);
@@ -33,10 +36,9 @@ export default function CalendarScreen() {
 
   const weekDays = getWeekDays(weekOffset);
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const headerFade = useFadeIn({ delay: 0, translateY: -10 });
 
-  useFocusEffect(
-    useCallback(() => { loadEvents(); }, [selectedDate])
-  );
+  useFocusEffect(useCallback(() => { loadEvents(); }, [selectedDate]));
 
   const loadEvents = async () => {
     setLoading(true);
@@ -69,15 +71,14 @@ export default function CalendarScreen() {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
+      <Animated.View style={[styles.header, headerFade.animatedStyle]}>
         <Text style={styles.monthTitle}>{selectedDate.toLocaleDateString([], { month: 'long', year: 'numeric' })}</Text>
-        <TouchableOpacity
-          style={styles.todayBtn}
-          onPress={() => { setWeekOffset(0); setSelectedDate(new Date()); }}
-        >
-          <Text style={styles.todayBtnText}>Today</Text>
+        <TouchableOpacity style={styles.todayBtn} onPress={() => { setWeekOffset(0); setSelectedDate(new Date()); }}>
+          <LinearGradient colors={['#FFB800', '#CC9200']} style={styles.todayBtnGrad}>
+            <Text style={styles.todayBtnText}>Today</Text>
+          </LinearGradient>
         </TouchableOpacity>
-      </View>
+      </Animated.View>
 
       {/* Week Navigator */}
       <View style={styles.weekNav}>
@@ -92,22 +93,29 @@ export default function CalendarScreen() {
 
       {/* Week Strip */}
       <View style={styles.weekStrip}>
-        {weekDays.map((day, i) => (
-          <TouchableOpacity
-            key={i}
-            style={[styles.dayCell, isSelected(day) && styles.dayCellSelected, isToday(day) && !isSelected(day) && styles.dayCellToday]}
-            onPress={() => setSelectedDate(day)}
-          >
-            <Text style={[styles.dayName, isSelected(day) && styles.dayNameSelected]}>{dayNames[i]}</Text>
-            <Text style={[styles.dayNum, isSelected(day) && styles.dayNumSelected]}>{day.getDate()}</Text>
-          </TouchableOpacity>
-        ))}
+        {weekDays.map((day, i) => {
+          const selected = isSelected(day);
+          const today = isToday(day);
+          return (
+            <TouchableOpacity
+              key={i}
+              style={[styles.dayCell, selected && styles.dayCellSelected, today && !selected && styles.dayCellToday]}
+              onPress={() => setSelectedDate(day)}
+            >
+              <Text style={[styles.dayName, selected && styles.dayNameSelected]}>{dayNames[i]}</Text>
+              <Text style={[styles.dayNum, selected && styles.dayNumSelected]}>{day.getDate()}</Text>
+              {selected && <View style={styles.selectedDot} />}
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
       {/* Selected Date & Count */}
       <View style={styles.dateRow}>
         <Text style={styles.dateLabel}>{selectedDate.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}</Text>
-        <Text style={styles.eventCount}>{events.length} events</Text>
+        <View style={styles.countBadge}>
+          <Text style={styles.eventCount}>{events.length}</Text>
+        </View>
       </View>
 
       {/* Events List */}
@@ -117,66 +125,72 @@ export default function CalendarScreen() {
         <FlatList
           data={events}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingHorizontal: Spacing.md, paddingBottom: 100 }}
-          renderItem={({ item }) => {
+          contentContainerStyle={{ paddingHorizontal: Spacing.md, paddingBottom: 120 }}
+          renderItem={({ item, index }) => {
             const catColor = Colors.categories[item.category as keyof typeof Colors.categories] || theme.primary;
             const ended = isPast(item.end_time || item.start_time);
             return (
-              <TouchableOpacity
-                style={[styles.eventCard, ended && styles.eventCardEnded]}
-                onPress={() => router.push(`/event/${item.id}` as any)}
-                activeOpacity={0.8}
-              >
-                <View style={[styles.catStripe, { backgroundColor: catColor }]} />
-                <View style={styles.eventContent}>
-                  <View style={styles.eventTop}>
-                    <View style={styles.eventTime}>
-                      <Ionicons name="time-outline" size={14} color={catColor} />
-                      <Text style={[styles.eventTimeText, { color: catColor }]}>
-                        {new Date(item.start_time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
-                      </Text>
-                    </View>
-                    {ended && (
-                      <View style={styles.endedBadge}>
-                        <Text style={styles.endedText}>Ended</Text>
+              <Animated.View entering={FadeInDown.delay(index * 60).springify().damping(18)}>
+                <TouchableOpacity
+                  style={[styles.eventCard, ended && styles.eventCardEnded]}
+                  onPress={() => router.push(`/event/${item.id}` as any)}
+                  activeOpacity={0.8}
+                >
+                  <View style={[styles.catStripe, { backgroundColor: catColor }]}>
+                    <LinearGradient colors={[catColor, catColor + '66']} style={StyleSheet.absoluteFill} />
+                  </View>
+                  <View style={styles.eventContent}>
+                    <View style={styles.eventTop}>
+                      <View style={styles.eventTime}>
+                        <View style={[styles.timeIcon, { backgroundColor: catColor + '22' }]}>
+                          <Ionicons name="time-outline" size={12} color={catColor} />
+                        </View>
+                        <Text style={[styles.eventTimeText, { color: catColor }]}>
+                          {new Date(item.start_time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                        </Text>
                       </View>
-                    )}
-                  </View>
-                  <Text style={[styles.eventTitle, ended && { opacity: 0.5 }]} numberOfLines={1}>{item.title}</Text>
-                  <View style={styles.eventMeta}>
-                    <Text style={styles.eventClub}>{item.club_name}</Text>
-                    <View style={styles.eventLoc}>
-                      <Ionicons name="location-outline" size={12} color={theme.textMuted} />
-                      <Text style={styles.eventLocText} numberOfLines={1}>{item.location || 'TBD'}</Text>
+                      {ended && (
+                        <View style={styles.endedBadge}>
+                          <Text style={styles.endedText}>Ended</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={[styles.eventTitle, ended && { opacity: 0.5 }]} numberOfLines={1}>{item.title}</Text>
+                    <View style={styles.eventMeta}>
+                      <Text style={styles.eventClub}>{item.club_name}</Text>
+                      <View style={styles.eventLoc}>
+                        <Ionicons name="location-outline" size={12} color={theme.textMuted} />
+                        <Text style={styles.eventLocText} numberOfLines={1}>{item.location || 'TBD'}</Text>
+                      </View>
+                    </View>
+                    <View style={styles.eventActions}>
+                      <View style={styles.attendees}>
+                        <Ionicons name="people" size={14} color={theme.textMuted} />
+                        <Text style={styles.attendeesText}>{item.rsvp_count || 0}</Text>
+                      </View>
+                      {!ended && (
+                        <TouchableOpacity
+                          style={[styles.rsvpBtn, item.user_rsvped && styles.rsvpBtnActive]}
+                          onPress={() => handleRSVP(item.id)}
+                        >
+                          <Ionicons name={item.user_rsvped ? 'heart' : 'heart-outline'} size={14} color={item.user_rsvped ? '#FFF' : theme.accent} />
+                          <Text style={[styles.rsvpText, item.user_rsvped && { color: '#FFF' }]}>{item.user_rsvped ? 'Going' : 'RSVP'}</Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                   </View>
-                  <View style={styles.eventActions}>
-                    <View style={styles.attendees}>
-                      <Ionicons name="people" size={14} color={theme.textMuted} />
-                      <Text style={styles.attendeesText}>{item.rsvp_count || 0}</Text>
-                    </View>
-                    {!ended && (
-                      <TouchableOpacity
-                        style={[styles.rsvpBtn, item.user_rsvped && styles.rsvpBtnActive]}
-                        onPress={() => handleRSVP(item.id)}
-                      >
-                        <Ionicons name={item.user_rsvped ? 'heart' : 'heart-outline'} size={14} color={item.user_rsvped ? '#FFF' : theme.accent} />
-                        <Text style={[styles.rsvpText, item.user_rsvped && { color: '#FFF' }]}>{item.user_rsvped ? 'Going' : 'RSVP'}</Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                </View>
-              </TouchableOpacity>
+                </TouchableOpacity>
+              </Animated.View>
             );
           }}
           ListEmptyComponent={
-            <View style={styles.emptyState}>
+            <Animated.View style={styles.emptyState} entering={ZoomIn.springify().damping(14)}>
               <View style={styles.emptyCircle}>
                 <Ionicons name="calendar-outline" size={40} color={theme.textMuted} />
               </View>
               <Text style={styles.emptyTitle}>No events on this day</Text>
               <Text style={styles.emptySub}>Try another date or follow more clubs</Text>
-            </View>
+            </Animated.View>
           }
         />
       )}
@@ -185,61 +199,76 @@ export default function CalendarScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.dark.background, paddingTop: 56 },
+  container: { flex: 1, backgroundColor: theme.background, paddingTop: Platform.OS === 'ios' ? 56 : 40 },
 
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: Spacing.md, marginBottom: Spacing.sm },
-  monthTitle: { color: Colors.dark.text, fontSize: FontSize.xl, fontWeight: '800' },
-  todayBtn: { backgroundColor: Colors.dark.accent, paddingHorizontal: Spacing.md, paddingVertical: 6, borderRadius: BorderRadius.full },
-  todayBtnText: { color: '#FFF', fontSize: FontSize.xs, fontWeight: '700' },
+  monthTitle: { fontFamily: Fonts.heading, color: theme.text, fontSize: FontSize.xl },
+  todayBtn: { borderRadius: BorderRadius.full, overflow: 'hidden', ...Shadows.glowSmall('#FFB800') },
+  todayBtnGrad: { paddingHorizontal: Spacing.md, paddingVertical: 6 },
+  todayBtnText: { fontFamily: Fonts.heading, color: '#000', fontSize: FontSize.xs },
 
   weekNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.md, marginBottom: Spacing.sm },
   navArrow: { padding: 4 },
-  weekLabel: { color: Colors.dark.textSecondary, fontSize: FontSize.sm },
+  weekLabel: { color: theme.textSecondary, fontSize: FontSize.sm, fontFamily: Fonts.body },
 
   weekStrip: { flexDirection: 'row', paddingHorizontal: Spacing.sm, marginBottom: Spacing.md },
-  dayCell: { flex: 1, alignItems: 'center', paddingVertical: Spacing.sm, borderRadius: BorderRadius.md },
-  dayCellSelected: { backgroundColor: Colors.dark.primary },
-  dayCellToday: { borderWidth: 1, borderColor: Colors.dark.accent },
-  dayName: { color: Colors.dark.textMuted, fontSize: 11, fontWeight: '500', marginBottom: 4 },
-  dayNameSelected: { color: '#FFF' },
-  dayNum: { color: Colors.dark.text, fontSize: FontSize.lg, fontWeight: '700' },
+  dayCell: { flex: 1, alignItems: 'center', paddingVertical: Spacing.sm, borderRadius: BorderRadius.md, position: 'relative' },
+  dayCellSelected: { backgroundColor: theme.primary, ...Shadows.glowSmall('#1E6AFF') },
+  dayCellToday: { borderWidth: 1, borderColor: theme.accent + '66' },
+  dayName: { fontFamily: Fonts.body, color: theme.textMuted, fontSize: 10, marginBottom: 4 },
+  dayNameSelected: { color: 'rgba(255,255,255,0.8)' },
+  dayNum: { fontFamily: Fonts.heading, color: theme.text, fontSize: FontSize.lg },
   dayNumSelected: { color: '#FFF' },
+  selectedDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: '#FFF', marginTop: 4 },
 
   dateRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: Spacing.md, marginBottom: Spacing.sm },
-  dateLabel: { color: Colors.dark.textSecondary, fontSize: FontSize.sm },
-  eventCount: { color: Colors.dark.textMuted, fontSize: FontSize.xs },
+  dateLabel: { color: theme.textSecondary, fontSize: FontSize.sm, fontFamily: Fonts.body },
+  countBadge: {
+    backgroundColor: theme.accent + '22', paddingHorizontal: 10, paddingVertical: 3,
+    borderRadius: BorderRadius.full, borderWidth: 1, borderColor: theme.accent + '44',
+  },
+  eventCount: { color: theme.accent, fontSize: FontSize.xs, fontFamily: Fonts.heading },
 
   eventCard: {
-    flexDirection: 'row', backgroundColor: Colors.dark.surface, borderRadius: BorderRadius.md,
-    marginBottom: Spacing.sm, overflow: 'hidden',
-    elevation: 4, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 8,
+    flexDirection: 'row', backgroundColor: Glass.background, borderRadius: BorderRadius.md,
+    marginBottom: Spacing.sm, overflow: 'hidden', borderWidth: 1, borderColor: Glass.border,
+    ...Shadows.card,
   },
   eventCardEnded: { opacity: 0.6 },
-  catStripe: { width: 4 },
+  catStripe: { width: 4, overflow: 'hidden' },
   eventContent: { flex: 1, padding: Spacing.md },
 
   eventTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
-  eventTime: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  eventTimeText: { fontSize: FontSize.xs, fontWeight: '600' },
-  endedBadge: { backgroundColor: Colors.dark.danger + '22', paddingHorizontal: 8, paddingVertical: 2, borderRadius: BorderRadius.full },
-  endedText: { color: Colors.dark.danger, fontSize: 10, fontWeight: '600' },
+  eventTime: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  timeIcon: { width: 22, height: 22, borderRadius: 6, justifyContent: 'center', alignItems: 'center' },
+  eventTimeText: { fontSize: FontSize.xs, fontFamily: Fonts.headingMed },
+  endedBadge: { backgroundColor: theme.danger + '22', paddingHorizontal: 8, paddingVertical: 2, borderRadius: BorderRadius.full },
+  endedText: { color: theme.danger, fontSize: 10, fontFamily: Fonts.headingMed },
 
-  eventTitle: { color: Colors.dark.text, fontSize: FontSize.md, fontWeight: '600', marginBottom: 4 },
+  eventTitle: { fontFamily: Fonts.headingMed, color: theme.text, fontSize: FontSize.md, marginBottom: 4 },
   eventMeta: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.sm },
-  eventClub: { color: Colors.dark.textSecondary, fontSize: FontSize.xs },
+  eventClub: { fontFamily: Fonts.body, color: theme.textSecondary, fontSize: FontSize.xs },
   eventLoc: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  eventLocText: { color: Colors.dark.textMuted, fontSize: 11, maxWidth: 120 },
+  eventLocText: { color: theme.textMuted, fontSize: 11, maxWidth: 120, fontFamily: Fonts.body },
 
   eventActions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   attendees: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  attendeesText: { color: Colors.dark.textMuted, fontSize: FontSize.xs },
+  attendeesText: { color: theme.textMuted, fontSize: FontSize.xs, fontFamily: Fonts.body },
 
-  rsvpBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: Spacing.sm, paddingVertical: 4, borderRadius: BorderRadius.full, borderWidth: 1, borderColor: Colors.dark.accent },
-  rsvpBtnActive: { backgroundColor: Colors.dark.accent, borderColor: Colors.dark.accent },
-  rsvpText: { color: Colors.dark.accent, fontSize: 11, fontWeight: '600' },
+  rsvpBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingHorizontal: Spacing.sm + 2, paddingVertical: 5, borderRadius: BorderRadius.full,
+    borderWidth: 1, borderColor: theme.accent, backgroundColor: 'transparent',
+  },
+  rsvpBtnActive: { backgroundColor: theme.accent, borderColor: theme.accent },
+  rsvpText: { color: theme.accent, fontSize: 11, fontFamily: Fonts.headingMed },
 
   emptyState: { alignItems: 'center', marginTop: 80 },
-  emptyCircle: { width: 72, height: 72, borderRadius: 36, backgroundColor: Colors.dark.surface, justifyContent: 'center', alignItems: 'center', marginBottom: Spacing.md },
-  emptyTitle: { color: Colors.dark.text, fontSize: FontSize.md, fontWeight: '600' },
-  emptySub: { color: Colors.dark.textSecondary, fontSize: FontSize.sm, marginTop: 4 },
+  emptyCircle: {
+    width: 80, height: 80, borderRadius: 40,
+    backgroundColor: Glass.background, borderWidth: 1, borderColor: Glass.border,
+    justifyContent: 'center', alignItems: 'center', marginBottom: Spacing.md,
+  },
+  emptyTitle: { color: theme.text, fontSize: FontSize.md, fontFamily: Fonts.headingMed },
+  emptySub: { color: theme.textSecondary, fontSize: FontSize.sm, marginTop: 4, fontFamily: Fonts.body },
 });

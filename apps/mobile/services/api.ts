@@ -173,12 +173,7 @@ export const tickets = {
   mine: () => request('/api/tickets/mine'),
 };
 
-// V2: Points & Rewards
-export const points = {
-  me: () => request('/api/points/me'),
-  checkin: (eventId: string) => request(`/api/points/checkin/${eventId}`, { method: 'POST' }),
-  leaderboard: () => request('/api/points/leaderboard'),
-};
+// Points/rewards system removed
 
 // Upload — S3 presigned URL generation
 export const upload = {
