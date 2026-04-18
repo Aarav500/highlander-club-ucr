@@ -5,8 +5,9 @@ import { cn } from "@/lib/utils";
 import React from "react";
 
 // --- Glass Card ---
-interface GlassCardProps extends HTMLMotionProps<"div"> {
+interface GlassCardProps extends Omit<HTMLMotionProps<"div">, "children"> {
   hoverGlow?: boolean;
+  children?: React.ReactNode;
 }
 
 export const GlassCard = React.forwardRef<HTMLDivElement, GlassCardProps>(
@@ -46,8 +47,9 @@ export const GlassNavbar = ({ children, className }: { children: React.ReactNode
 };
 
 // --- Glass Button ---
-interface GlassButtonProps extends HTMLMotionProps<"button"> {
+interface GlassButtonProps extends Omit<HTMLMotionProps<"button">, "children"> {
   variant?: "primary" | "accent" | "ghost";
+  children?: React.ReactNode;
 }
 
 export const GlassButton = React.forwardRef<HTMLButtonElement, GlassButtonProps>(

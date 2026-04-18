@@ -22,8 +22,8 @@ export default async function Home() {
       <section className="relative w-full rounded-3xl overflow-hidden border border-glass-border bg-glass-bg backdrop-blur-md p-8 md:p-12 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
         <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-transparent to-accent/10 mix-blend-overlay" />
         <div className="relative z-10 max-w-2xl">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-white mb-4 tracking-tight">
-            Discover What's <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">Happening</span>
+  <h1 className="text-4xl md:text-5xl font-extrabold text-white mb-4 tracking-tight">
+            Discover What&apos;s <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">Happening</span>
           </h1>
           <p className="text-lg text-muted-foreground mb-8">
             Explore events, join clubs, and connect with the Highlander community. 

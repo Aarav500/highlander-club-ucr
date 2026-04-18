@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, Variants } from "framer-motion";
 import { GlassCard } from "./GlassComponents";
 import { Calendar, MapPin, Users, Heart } from "lucide-react";
 import Image from "next/image";
@@ -17,7 +17,7 @@ interface Event {
   user_rsvped?: boolean;
 }
 
-const containerVars = {
+const containerVars: Variants = {
   hidden: { opacity: 0 },
   show: {
     opacity: 1,
@@ -27,7 +27,7 @@ const containerVars = {
   },
 };
 
-const itemVars = {
+const itemVars: Variants = {
   hidden: { opacity: 0, y: 30, scale: 0.95 },
   show: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 300, damping: 24 } },
 };
