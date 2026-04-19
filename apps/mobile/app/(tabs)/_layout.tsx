@@ -91,7 +91,7 @@ export default function TabLayout() {
           bottom: Platform.OS === 'ios' ? 20 : 12,
           left: 16,
           right: 16,
-          backgroundColor: Platform.OS === 'ios' ? 'transparent' : 'rgba(8,16,30,0.95)',
+          backgroundColor: Platform.OS === 'ios' ? 'transparent' : 'rgba(2,8,16,0.96)',
           borderTopWidth: 0,
           borderRadius: 24,
           height: Platform.OS === 'ios' ? 72 : 64,

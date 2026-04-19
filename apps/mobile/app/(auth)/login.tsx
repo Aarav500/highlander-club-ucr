@@ -148,7 +148,7 @@ export default function LoginScreen() {
 
   return (
     <View style={styles.container}>
-      <LinearGradient colors={['#050810', '#080F20', '#050810']} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={['#020810', '#061022', '#020810']} style={StyleSheet.absoluteFill} />
 
       {/* Ambient orbs */}
       <GlowOrb x={-80} y={SCREEN_HEIGHT * 0.1} color={theme.primary} size={300} delay={0} />

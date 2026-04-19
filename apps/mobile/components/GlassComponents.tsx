@@ -87,7 +87,7 @@ export function GlassCard({
   style, 
   intensity = 40, 
   tint = 'dark',
-  fallbackColor = 'rgba(13, 18, 33, 0.85)',
+  fallbackColor = 'rgba(6, 16, 34, 0.88)',
   hasBorder = true
 }: GlassCardProps) {
   return (
@@ -131,12 +131,12 @@ export function AmbientBackground() {
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
-      {/* Deep Obsidian Base */}
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: '#030508' }]} />
+      {/* Deep Navy Base */}
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: '#020810' }]} />
       
       <Animated.View style={[StyleSheet.absoluteFill, animatedStyle1]}>
         <LinearGradient
-          colors={['rgba(30,106,255,0.15)', 'transparent']}
+          colors={['rgba(41,121,255,0.12)', 'transparent']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={StyleSheet.absoluteFill}
@@ -145,7 +145,7 @@ export function AmbientBackground() {
       
       <Animated.View style={[StyleSheet.absoluteFill, animatedStyle2]}>
         <LinearGradient
-          colors={['transparent', 'rgba(255,184,0,0.1)']}
+          colors={['transparent', 'rgba(255,179,0,0.08)']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={StyleSheet.absoluteFill}
@@ -153,7 +153,7 @@ export function AmbientBackground() {
       </Animated.View>
       
       {/* Noise overlay to prevent banding */}
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.2)' }]} />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.15)' }]} />
     </View>
   );
 }

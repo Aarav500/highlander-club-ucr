@@ -44,12 +44,12 @@ router.get('/cas/login', (req, res) => {
   const redirectTo = req.query.redirect || '';
   // Encode the service URL so CAS knows where to send the ticket
   const casLoginUrl = `${CAS_LOGIN_URL}?service=${encodeURIComponent(serviceUrl)}`;
-  
+
   // Store the redirect target in a cookie so we can use it after CAS callback
   if (redirectTo) {
     res.cookie('cas_redirect', redirectTo, { httpOnly: true, maxAge: 5 * 60 * 1000 });
   }
-  
+
   res.redirect(casLoginUrl);
 });
 
@@ -79,7 +79,7 @@ router.get('/cas/callback', async (req, res, next) => {
     await pool.query(
       'INSERT INTO cas_sessions (ticket, netid, ip_address) VALUES ($1, $2, $3) ON CONFLICT (ticket) DO NOTHING',
       [ticket, netid, req.ip]
-    ).catch(() => {}); // Non-critical
+    ).catch(() => { }); // Non-critical
 
     // Find or create user
     let user;
@@ -162,9 +162,9 @@ function validateCASTicket(ticket, serviceUrl) {
       res.on('data', chunk => data += chunk);
       res.on('end', async () => {
         try {
-          const result = await xml2js.parseStringPromise(data, { 
+          const result = await xml2js.parseStringPromise(data, {
             tagNameProcessors: [xml2js.processors.stripPrefix],
-            explicitArray: false 
+            explicitArray: false
           });
 
           const serviceResponse = result.serviceResponse;
@@ -311,31 +311,20 @@ router.post('/verify', async (req, res, next) => {
       return res.status(400).json({ error: 'Email and code are required' });
     }
 
-    // --- App Store / Play Store Reviewer Bypass ---
-    let isValidCode = false;
-    let bypassed = false;
+    // Find valid code
+    const result = await pool.query(
+      `SELECT id FROM login_codes 
+       WHERE email = $1 AND code = $2 AND used = false AND expires_at > now()
+       ORDER BY created_at DESC LIMIT 1`,
+      [email, code]
+    );
 
-    if (email === 'reviewer@ucr.edu' && code === '000000') {
-      isValidCode = true;
-      bypassed = true;
-      console.log('✅ App Store Reviewer login bypassed');
-    } else {
-      // Find valid code
-      const result = await pool.query(
-        `SELECT id FROM login_codes 
-         WHERE email = $1 AND code = $2 AND used = false AND expires_at > now()
-         ORDER BY created_at DESC LIMIT 1`,
-        [email, code]
-      );
-
-      if (result.rows.length === 0) {
-        return res.status(401).json({ error: 'Invalid or expired code' });
-      }
-      
-      // Mark code as used
-      await pool.query('UPDATE login_codes SET used = true WHERE id = $1', [result.rows[0].id]);
-      isValidCode = true;
+    if (result.rows.length === 0) {
+      return res.status(401).json({ error: 'Invalid or expired code' });
     }
+
+    // Mark code as used
+    await pool.query('UPDATE login_codes SET used = true WHERE id = $1', [result.rows[0].id]);
 
     // Find or create user
     let user;

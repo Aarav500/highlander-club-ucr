@@ -1,37 +1,37 @@
-// Highlander Events — Premium Design System v3 (Dark Luxury + Glassmorphism)
+// Highlander Events — Premium Design System v4 (UCR Blue & Gold Luxe)
 
 export const Colors = {
   // UCR Brand
-  ucrBlue: '#1E6AFF',
-  ucrGold: '#FFB800',
+  ucrBlue: '#2979FF',
+  ucrGold: '#FFB300',
 
-  // Dark theme (Neo-Glassmorphism Obsidian)
+  // Dark theme — Deep Navy + Gold accents (no purple)
   dark: {
-    background: '#030508',
-    surface: '#080C14',
-    surfaceElevated: '#0D1221',
-    card: '#080C14',
-    text: '#FFFFFF',
-    textSecondary: '#8896B3',
-    textMuted: '#4A5578',
-    primary: '#1E6AFF',
-    primaryLight: '#4D8BFF',
-    accent: '#FFB800',
-    accentLight: '#FFD166',
+    background: '#020810',
+    surface: '#061022',
+    surfaceElevated: '#0A1830',
+    card: '#061022',
+    text: '#F0F4FF',
+    textSecondary: '#94A8CC',
+    textMuted: '#506080',
+    primary: '#2979FF',
+    primaryLight: '#5C9AFF',
+    accent: '#FFB300',
+    accentLight: '#FFCC4D',
     cyan: '#00E5FF',
     success: '#00E676',
-    danger: '#FF3D5A',
-    warning: '#FFB800',
-    border: '#1A2240',
-    borderGlass: 'rgba(255,255,255,0.08)',
-    glass: 'rgba(255,255,255,0.05)',
-    glassStrong: 'rgba(255,255,255,0.1)',
-    tabBar: '#030508',
-    tabIconDefault: '#4A5578',
-    tabIconSelected: '#FFB800',
+    danger: '#FF4D6A',
+    warning: '#FFB300',
+    border: '#142040',
+    borderGlass: 'rgba(255,255,255,0.07)',
+    glass: 'rgba(255,255,255,0.04)',
+    glassStrong: 'rgba(255,255,255,0.09)',
+    tabBar: '#020810',
+    tabIconDefault: '#506080',
+    tabIconSelected: '#FFB300',
     happeningNow: '#00E5FF',
-    rsvp: '#FF3D5A',
-    rsvpActive: '#FFB800',
+    rsvp: '#FF4D6A',
+    rsvpActive: '#FFB300',
   },
 
   // Kept for backward compat
@@ -91,38 +91,40 @@ export const Colors = {
 // ─── Gradient Presets ─────────────────────────────────────────────────────────
 export const Gradients = {
   // Primary brand gradients
-  primary: ['#1E6AFF', '#1455CC'] as const,
-  accent: ['#FFB800', '#CC9200'] as const,
+  primary: ['#2979FF', '#1565D8'] as const,
+  accent: ['#FFB300', '#E69500'] as const,
   cyan: ['#00E5FF', '#00B8D4'] as const,
-  danger: ['#FF3D5A', '#DC2626'] as const,
+  danger: ['#FF4D6A', '#DC2626'] as const,
+  gold: ['#FFB300', '#FF8F00'] as const,
+  blueGold: ['#2979FF', '#FFB300'] as const,
 
   // Surface gradients (for cards, modals)
-  glassSurface: ['rgba(8,12,20,0.85)', 'rgba(8,12,20,0.65)'] as const,
-  glassCard: ['rgba(13,18,33,0.9)', 'rgba(13,18,33,0.7)'] as const,
-  glassElevated: ['rgba(20,26,46,0.9)', 'rgba(13,18,33,0.8)'] as const,
+  glassSurface: ['rgba(6,16,34,0.88)', 'rgba(6,16,34,0.68)'] as const,
+  glassCard: ['rgba(10,24,48,0.92)', 'rgba(10,24,48,0.72)'] as const,
+  glassElevated: ['rgba(16,30,58,0.92)', 'rgba(10,24,48,0.82)'] as const,
 
   // Background ambience
-  heroOverlay: ['rgba(3,5,8,0.3)', 'transparent', 'transparent', 'rgba(3,5,8,0.96)'] as const,
-  bottomFade: ['transparent', 'rgba(3,5,8,0.95)'] as const,
-  topFade: ['rgba(3,5,8,0.95)', 'transparent'] as const,
+  heroOverlay: ['rgba(2,8,16,0.3)', 'transparent', 'transparent', 'rgba(2,8,16,0.96)'] as const,
+  bottomFade: ['transparent', 'rgba(2,8,16,0.95)'] as const,
+  topFade: ['rgba(2,8,16,0.95)', 'transparent'] as const,
 
   // Glow presets
-  glowBlue: ['rgba(30,106,255,0.25)', 'rgba(30,106,255,0)'] as const,
-  glowGold: ['rgba(255,184,0,0.2)', 'rgba(255,184,0,0)'] as const,
+  glowBlue: ['rgba(41,121,255,0.25)', 'rgba(41,121,255,0)'] as const,
+  glowGold: ['rgba(255,179,0,0.22)', 'rgba(255,179,0,0)'] as const,
   glowCyan: ['rgba(0,229,255,0.2)', 'rgba(0,229,255,0)'] as const,
 
   // Tab bar
-  tabBarGlass: ['rgba(3,5,8,0.92)', 'rgba(3,5,8,0.98)'] as const,
+  tabBarGlass: ['rgba(2,8,16,0.92)', 'rgba(2,8,16,0.98)'] as const,
 };
 
 // ─── Glass Morphism Tokens ────────────────────────────────────────────────────
 export const Glass = {
-  background: 'rgba(8,12,20,0.75)',
-  backgroundStrong: 'rgba(8,12,20,0.88)',
-  backgroundLight: 'rgba(255,255,255,0.05)',
-  border: 'rgba(255,255,255,0.08)',
-  borderFocused: 'rgba(255,255,255,0.16)',
-  borderAccent: 'rgba(255,184,0,0.3)',
+  background: 'rgba(6,16,34,0.78)',
+  backgroundStrong: 'rgba(6,16,34,0.90)',
+  backgroundLight: 'rgba(255,255,255,0.04)',
+  border: 'rgba(255,255,255,0.07)',
+  borderFocused: 'rgba(255,255,255,0.18)',
+  borderAccent: 'rgba(255,179,0,0.35)',
   blurIntensity: 40,
   blurIntensityStrong: 80,
 };
