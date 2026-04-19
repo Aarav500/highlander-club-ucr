@@ -56,18 +56,23 @@ jobs:
           echo '${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}' > google-services.json
           echo "✅ Google Play service account written"
 
-      - name: Build Android
+      - name: Build Android APK
         working-directory: apps/mobile
+        if: github.event.inputs.profile != 'production' || (github.event.inputs.profile == '' && github.ref == 'refs/heads/main')
         run: |
-          if [ -n "${{ github.event.inputs.profile }}" ]; then
-            PROFILE="${{ github.event.inputs.profile }}"
-          elif [ "${{ github.ref }}" == "refs/heads/main" ]; then
-            PROFILE="production"
-          else
-            PROFILE="preview"
-          fi
-          echo "🤖 Building Android ($PROFILE)..."
+          PROFILE="${{ github.event.inputs.profile || 'preview' }}"
+          echo "🤖 Building Android APK ($PROFILE)..."
           eas build --platform android --profile "$PROFILE" --non-interactive
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EXPO_PUBLIC_API_URL: ${{ secrets.EC2_PUBLIC_URL }}
+
+      - name: Build Android AAB
+        working-directory: apps/mobile
+        if: github.event.inputs.profile == 'production' || (github.event.inputs.profile == '' && github.ref == 'refs/heads/main')
+        run: |
+          echo "🤖 Building Android AAB (production)..."
+          eas build --platform android --profile production --non-interactive
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           EXPO_PUBLIC_API_URL: ${{ secrets.EC2_PUBLIC_URL }}
