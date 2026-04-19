@@ -33,7 +33,7 @@ function TabBarBackground() {
   );
 }
 
-// Animated tab icon with scale + glow
+// Animated tab icon with Reanimated bouncy physics
 function AnimatedTabIcon({
   name,
   focusedName,
@@ -45,23 +45,33 @@ function AnimatedTabIcon({
   color: string;
   focused: boolean;
 }) {
-  const theme = Colors.dark;
+  // Spring config for the icon bounce
+  const springConfig = { damping: 15, stiffness: 350 };
+  
+  const iconScale = useAnimatedStyle(() => {
+    return {
+      transform: [{ scale: withSpring(focused ? 1.15 : 1, springConfig) }]
+    };
+  }, [focused]);
+
+  const dotStyle = useAnimatedStyle(() => {
+    return {
+      opacity: withSpring(focused ? 1 : 0, springConfig),
+      transform: [{ translateY: withSpring(focused ? 0 : 5, springConfig) }]
+    };
+  }, [focused]);
 
   return (
     <View style={styles.iconContainer}>
-      {/* Glow ring behind active icon */}
-      {focused && (
-        <View style={[styles.iconGlow, { backgroundColor: color + '25' }]} />
-      )}
-      <Ionicons
-        name={(focused ? focusedName : name) as any}
-        size={focused ? 26 : 24}
-        color={color}
-      />
-      {/* Active dot indicator */}
-      {focused && (
-        <View style={[styles.activeDot, { backgroundColor: color }]} />
-      )}
+      <Animated.View style={iconScale}>
+        <Ionicons
+          name={(focused ? focusedName : name) as any}
+          size={24}
+          color={color}
+        />
+      </Animated.View>
+      {/* Animated active dot indicator */}
+      <Animated.View style={[styles.activeDot, { backgroundColor: color }, dotStyle]} />
     </View>
   );
 }
@@ -166,16 +176,10 @@ const styles = StyleSheet.create({
     height: 36,
     position: 'relative',
   },
-  iconGlow: {
-    position: 'absolute',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    top: -2,
-  },
+
   activeDot: {
     position: 'absolute',
-    bottom: -4,
+    bottom: -8,
     width: 4,
     height: 4,
     borderRadius: 2,

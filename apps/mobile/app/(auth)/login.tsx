@@ -29,8 +29,8 @@ function GlowOrb({ x, y, color, size, delay }: { x: number; y: number; color: st
     progress.value = withDelay(delay,
       withRepeat(
         withSequence(
-          withTiming(1, { duration: 3000 + delay, easing: Easing.inOut(Easing.sine) }),
-          withTiming(0, { duration: 3000 + delay, easing: Easing.inOut(Easing.sine) })
+          withTiming(1, { duration: 3000 + delay, easing: Easing.inOut(Easing.sin) }),
+          withTiming(0, { duration: 3000 + delay, easing: Easing.inOut(Easing.sin) })
         ), -1, false
       )
     );

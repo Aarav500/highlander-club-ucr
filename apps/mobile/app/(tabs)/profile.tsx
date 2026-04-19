@@ -14,6 +14,7 @@ import Animated, { FadeInDown, FadeIn, ZoomIn } from 'react-native-reanimated';
 import { Colors, Spacing, BorderRadius, FontSize, Fonts, Glass, Shadows, Gradients } from '../../constants/Colors';
 import { useFadeIn, useSpringPress } from '../../constants/animations';
 import { users as usersApi, events as eventsApi, clubs as clubsApi, upload as uploadApi, setAuthToken } from '../../services/api';
+import { AmbientBackground, Bounceable, GlassCard } from '../../components/GlassComponents';
 
 const theme = Colors.dark;
 type TabKey = 'events' | 'following' | 'clubs' | 'friends';
@@ -108,6 +109,7 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.container}>
+      <AmbientBackground />
       <ScrollView contentContainerStyle={{ paddingBottom: 140 }}>
         {/* Animated header gradient */}
         <LinearGradient colors={[theme.primary + '30', theme.cyan + '10', 'transparent']}
@@ -181,18 +183,20 @@ export default function ProfileScreen() {
             const catColor = Colors.categories[event.category as keyof typeof Colors.categories] || theme.primary;
             return (
               <Animated.View key={event.id} entering={FadeInDown.delay(idx * 50).springify()}>
-                <TouchableOpacity style={styles.card} onPress={() => router.push(`/event/${event.id}` as any)}>
-                  <View style={[styles.cardIcon, { backgroundColor: catColor + '22' }]}>
-                    <Ionicons name="calendar" size={20} color={catColor} />
-                  </View>
-                  <View style={styles.cardInfo}>
-                    <Text style={styles.cardTitle} numberOfLines={1}>{event.title}</Text>
-                    <Text style={styles.cardMeta}>{new Date(event.start_time).toLocaleDateString([], { month: 'short', day: 'numeric' })} · {event.club_name}</Text>
-                  </View>
-                  <View style={styles.attendingBadge}>
-                    <Text style={styles.attendingText}>Going</Text>
-                  </View>
-                </TouchableOpacity>
+                <Bounceable onPress={() => router.push(`/event/${event.id}` as any)}>
+                  <GlassCard style={styles.card} intensity={50}>
+                    <View style={[styles.cardIcon, { backgroundColor: catColor + '22' }]}>
+                      <Ionicons name="calendar" size={20} color={catColor} />
+                    </View>
+                    <View style={styles.cardInfo}>
+                      <Text style={styles.cardTitle} numberOfLines={1}>{event.title}</Text>
+                      <Text style={styles.cardMeta}>{new Date(event.start_time).toLocaleDateString([], { month: 'short', day: 'numeric' })} · {event.club_name}</Text>
+                    </View>
+                    <View style={styles.attendingBadge}>
+                      <Text style={styles.attendingText}>Going</Text>
+                    </View>
+                  </GlassCard>
+                </Bounceable>
               </Animated.View>
             );
           }) : (
@@ -207,18 +211,20 @@ export default function ProfileScreen() {
         {activeTab === 'following' && (
           followedClubs.length > 0 ? followedClubs.map((club: any, idx) => (
             <Animated.View key={club.id} entering={FadeInDown.delay(idx * 50).springify()}>
-              <TouchableOpacity style={styles.card} onPress={() => router.push(`/club/${club.id}` as any)}>
-                <View style={[styles.clubIcon, { backgroundColor: theme.accent + '22' }]}>
-                  {club.logo_url
-                    ? <Image source={{ uri: club.logo_url }} style={styles.clubLogo} />
-                    : <Text style={styles.clubInitial}>{club.name?.charAt(0)}</Text>}
-                </View>
-                <View style={styles.cardInfo}>
-                  <Text style={styles.cardTitle} numberOfLines={1}>{club.name}</Text>
-                  <Text style={styles.cardMeta}>{club.follower_count || 0} followers · {club.category}</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
-              </TouchableOpacity>
+              <Bounceable onPress={() => router.push(`/club/${club.id}` as any)}>
+                <GlassCard style={styles.card} intensity={50}>
+                  <View style={[styles.clubIcon, { backgroundColor: theme.accent + '22' }]}>
+                    {club.logo_url
+                      ? <Image source={{ uri: club.logo_url }} style={styles.clubLogo} />
+                      : <Text style={styles.clubInitial}>{club.name?.charAt(0)}</Text>}
+                  </View>
+                  <View style={styles.cardInfo}>
+                    <Text style={styles.cardTitle} numberOfLines={1}>{club.name}</Text>
+                    <Text style={styles.cardMeta}>{club.follower_count || 0} followers · {club.category}</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
+                </GlassCard>
+              </Bounceable>
             </Animated.View>
           )) : (
             <View style={styles.emptyTab}>
@@ -254,8 +260,9 @@ export default function ProfileScreen() {
               const isOfficer = OFFICER_ROLES.has(club.user_role);
               return (
                 <Animated.View key={club.id} entering={FadeInDown.delay(120 + idx * 50).springify()}>
-                  <View style={styles.card}>
-                    <View style={[styles.clubIcon, { backgroundColor: theme.accent + '22' }]}>
+                  <Bounceable onPress={() => router.push(`/club/${club.id}` as any)}>
+                    <GlassCard style={styles.card} intensity={50}>
+                      <View style={[styles.clubIcon, { backgroundColor: theme.accent + '22' }]}>
                       {club.logo_url
                         ? <Image source={{ uri: club.logo_url }} style={styles.clubLogo} />
                         : <Text style={styles.clubInitial}>{club.name?.charAt(0)}</Text>}
@@ -275,7 +282,8 @@ export default function ProfileScreen() {
                         </LinearGradient>
                       </TouchableOpacity>
                     )}
-                  </View>
+                    </GlassCard>
+                  </Bounceable>
                 </Animated.View>
               );
             }) : (
@@ -292,17 +300,19 @@ export default function ProfileScreen() {
         {activeTab === 'friends' && (
           friends.length > 0 ? friends.map((f: any, idx) => (
             <Animated.View key={f.id} entering={FadeInDown.delay(idx * 50).springify()}>
-              <View style={styles.card}>
-                <View style={styles.friendAvatar}>
-                  {f.avatar_url
-                    ? <Image source={{ uri: f.avatar_url }} style={styles.friendAvatarImg} />
-                    : <Text style={styles.friendInitial}>{f.name?.charAt(0) || '?'}</Text>}
-                </View>
-                <View style={styles.cardInfo}>
-                  <Text style={styles.cardTitle}>{f.name || 'Highlander'}</Text>
-                  <Text style={styles.cardMeta}>{f.email}</Text>
-                </View>
-              </View>
+              <Bounceable>
+                <GlassCard style={styles.card} intensity={50}>
+                  <View style={styles.friendAvatar}>
+                    {f.avatar_url
+                      ? <Image source={{ uri: f.avatar_url }} style={styles.friendAvatarImg} />
+                      : <Text style={styles.friendInitial}>{f.name?.charAt(0) || '?'}</Text>}
+                  </View>
+                  <View style={styles.cardInfo}>
+                    <Text style={styles.cardTitle}>{f.name || 'Highlander'}</Text>
+                    <Text style={styles.cardMeta}>{f.email}</Text>
+                  </View>
+                </GlassCard>
+              </Bounceable>
             </Animated.View>
           )) : (
             <View style={styles.emptyTab}>
@@ -405,8 +415,8 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
     marginHorizontal: Spacing.md, marginBottom: Spacing.sm, padding: Spacing.md,
-    backgroundColor: Glass.background, borderRadius: BorderRadius.md,
-    borderWidth: 1, borderColor: Glass.border,
+    backgroundColor: 'transparent', borderRadius: BorderRadius.md,
+    borderWidth: 0,
   },
   cardIcon: { width: 44, height: 44, borderRadius: BorderRadius.sm, justifyContent: 'center', alignItems: 'center' },
   cardInfo: { flex: 1 },

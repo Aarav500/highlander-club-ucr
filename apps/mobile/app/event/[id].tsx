@@ -1,16 +1,18 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, Image,
-  StyleSheet, ActivityIndicator, Share, Dimensions, Alert,
+  StyleSheet, ActivityIndicator, Share, Dimensions, Alert, Platform
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeInDown, FadeIn, ZoomIn } from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeIn, ZoomIn, useAnimatedScrollHandler, useSharedValue, useAnimatedStyle, interpolate, Extrapolation } from 'react-native-reanimated';
 import { Colors, Spacing, BorderRadius, FontSize, Fonts, Glass, Shadows, Gradients } from '../../constants/Colors';
 import { useSpringPress } from '../../constants/animations';
 import { events as eventsApi, getAuthToken } from '../../services/api';
+import { Bounceable, GlassCard } from '../../components/GlassComponents';
+import { BlurView } from 'expo-blur';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const theme = Colors.dark;
@@ -25,8 +27,24 @@ export default function EventDetailScreen() {
   const [photos, setPhotos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const scrollY = useSharedValue(0);
 
-  const { animatedStyle: rsvpPress, onPressIn, onPressOut } = useSpringPress({ scaleTo: 0.96 });
+  const scrollHandler = useAnimatedScrollHandler((event) => {
+    scrollY.value = event.contentOffset.y;
+  });
+
+  const heroAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [
+        {
+          translateY: interpolate(scrollY.value, [-100, 0, 300], [-50, 0, 150], Extrapolation.CLAMP)
+        },
+        {
+          scale: interpolate(scrollY.value, [-100, 0], [1.3, 1], Extrapolation.CLAMP)
+        }
+      ]
+    };
+  });
 
   useEffect(() => { loadEvent(); }, [id]);
 
@@ -96,9 +114,13 @@ export default function EventDetailScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <Animated.ScrollView 
+        showsVerticalScrollIndicator={false}
+        onScroll={scrollHandler}
+        scrollEventThrottle={16}
+      >
         {/* Hero Image */}
-        <View style={styles.heroContainer}>
+        <Animated.View style={[styles.heroContainer, heroAnimatedStyle]}>
           {event.image_url ? (
             <Image source={{ uri: event.image_url }} style={styles.heroImage} />
           ) : (
@@ -115,9 +137,9 @@ export default function EventDetailScreen() {
           <TouchableOpacity style={styles.shareBtn} onPress={handleShare}>
             <View style={styles.glassBtnBg}><Ionicons name="share-outline" size={22} color="#FFF" /></View>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
 
-        {/* Content */}
+        {/* Content (slides up over hero) */}
         <View style={styles.content}>
           <Animated.View entering={FadeInDown.delay(100).springify()}>
             <View style={[styles.categoryBadge, { backgroundColor: catColor + '22', borderColor: catColor + '44' }]}>
@@ -140,7 +162,7 @@ export default function EventDetailScreen() {
 
           {/* Meta info — glass card */}
           <Animated.View entering={FadeInDown.delay(250).springify()}>
-            <View style={styles.metaCard}>
+            <GlassCard style={styles.metaCard} intensity={50}>
               {[
                 { icon: 'calendar', text: formatDateTime(event.start_time) },
                 { icon: 'time', text: `Until ${formatDateTime(event.end_time).split(' at ')[1]}` },
@@ -154,7 +176,7 @@ export default function EventDetailScreen() {
                   <Text style={styles.metaText}>{m.text}</Text>
                 </View>
               ))}
-            </View>
+            </GlassCard>
           </Animated.View>
 
           {/* Friends going */}
@@ -229,24 +251,25 @@ export default function EventDetailScreen() {
             </TouchableOpacity>
           </Animated.View>
 
-          <View style={{ height: 100 }} />
+          <View style={{ height: 120 }} />
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
 
-      {/* Sticky RSVP Bar — glass */}
+      {/* Sticky RSVP Bar — Frosted glass */}
       <View style={styles.rsvpBar}>
-        <AnimatedTouchable
-          style={[styles.rsvpBtn, { backgroundColor: event.user_rsvped ? theme.accent : theme.primary }, rsvpPress]}
-          onPress={handleRSVP}
-          onPressIn={onPressIn}
-          onPressOut={onPressOut}
-          activeOpacity={1}
-        >
-          <Ionicons name={event.user_rsvped ? 'heart' : 'heart-outline'} size={20} color={event.user_rsvped ? '#000' : '#FFF'} />
-          <Text style={[styles.rsvpBtnText, event.user_rsvped && { color: '#000' }]}>
-            {event.user_rsvped ? "I'm Going!" : "RSVP — I'm In"}
-          </Text>
-        </AnimatedTouchable>
+        <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill} />
+        <View style={styles.rsvpBorderTop} />
+        <View style={styles.rsvpInner}>
+          <Bounceable
+            style={[styles.rsvpBtn, { backgroundColor: event.user_rsvped ? theme.accent : theme.primary }]}
+            onPress={handleRSVP}
+          >
+            <Ionicons name={event.user_rsvped ? 'heart' : 'heart-outline'} size={20} color={event.user_rsvped ? '#000' : '#FFF'} />
+            <Text style={[styles.rsvpBtnText, event.user_rsvped && { color: '#000' }]}>
+              {event.user_rsvped ? "I'm Going!" : "RSVP — I'm In"}
+            </Text>
+          </Bounceable>
+        </View>
       </View>
     </View>
   );
@@ -283,8 +306,8 @@ const styles = StyleSheet.create({
 
   metaCard: {
     padding: Spacing.md, borderRadius: BorderRadius.lg, gap: Spacing.md,
-    marginBottom: Spacing.md, backgroundColor: Glass.background,
-    borderWidth: 1, borderColor: Glass.border, ...Shadows.card,
+    marginBottom: Spacing.md, backgroundColor: 'transparent',
+    borderWidth: 0, ...Shadows.card,
   },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   metaIconWrap: { width: 32, height: 32, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
@@ -317,8 +340,14 @@ const styles = StyleSheet.create({
 
   rsvpBar: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
-    padding: Spacing.md, paddingBottom: Spacing.lg,
-    backgroundColor: Glass.backgroundStrong, borderTopWidth: 1, borderTopColor: Glass.border,
+    paddingBottom: Spacing.lg,
+    overflow: 'hidden', borderTopLeftRadius: 24, borderTopRightRadius: 24,
+  },
+  rsvpBorderTop: {
+    position: 'absolute', top: 0, left: 0, right: 0, height: 1, backgroundColor: 'rgba(255,255,255,0.15)'
+  },
+  rsvpInner: {
+    padding: Spacing.md, paddingBottom: Platform.OS === 'ios' ? 34 : Spacing.md,
   },
   rsvpBtn: {
     height: 54, borderRadius: BorderRadius.lg, flexDirection: 'row',

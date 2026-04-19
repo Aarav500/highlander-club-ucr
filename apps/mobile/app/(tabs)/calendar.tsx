@@ -11,6 +11,7 @@ import Animated, { FadeInDown, FadeIn, ZoomIn } from 'react-native-reanimated';
 import { Colors, Spacing, BorderRadius, FontSize, Fonts, Glass, Shadows, AnimTiming } from '../../constants/Colors';
 import { useSpringPress, useFadeIn } from '../../constants/animations';
 import { events as eventsApi } from '../../services/api';
+import { AmbientBackground, Bounceable, GlassCard } from '../../components/GlassComponents';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const theme = Colors.dark;
@@ -70,6 +71,7 @@ export default function CalendarScreen() {
 
   return (
     <View style={styles.container}>
+      <AmbientBackground />
       {/* Header */}
       <Animated.View style={[styles.header, headerFade.animatedStyle]}>
         <Text style={styles.monthTitle}>{selectedDate.toLocaleDateString([], { month: 'long', year: 'numeric' })}</Text>
@@ -97,7 +99,7 @@ export default function CalendarScreen() {
           const selected = isSelected(day);
           const today = isToday(day);
           return (
-            <TouchableOpacity
+            <Bounceable
               key={i}
               style={[styles.dayCell, selected && styles.dayCellSelected, today && !selected && styles.dayCellToday]}
               onPress={() => setSelectedDate(day)}
@@ -105,7 +107,7 @@ export default function CalendarScreen() {
               <Text style={[styles.dayName, selected && styles.dayNameSelected]}>{dayNames[i]}</Text>
               <Text style={[styles.dayNum, selected && styles.dayNumSelected]}>{day.getDate()}</Text>
               {selected && <View style={styles.selectedDot} />}
-            </TouchableOpacity>
+            </Bounceable>
           );
         })}
       </View>
@@ -131,55 +133,58 @@ export default function CalendarScreen() {
             const ended = isPast(item.end_time || item.start_time);
             return (
               <Animated.View entering={FadeInDown.delay(index * 60).springify().damping(18)}>
-                <TouchableOpacity
-                  style={[styles.eventCard, ended && styles.eventCardEnded]}
+                <Bounceable
                   onPress={() => router.push(`/event/${item.id}` as any)}
-                  activeOpacity={0.8}
                 >
-                  <View style={[styles.catStripe, { backgroundColor: catColor }]}>
-                    <LinearGradient colors={[catColor, catColor + '66']} style={StyleSheet.absoluteFill} />
-                  </View>
-                  <View style={styles.eventContent}>
-                    <View style={styles.eventTop}>
-                      <View style={styles.eventTime}>
-                        <View style={[styles.timeIcon, { backgroundColor: catColor + '22' }]}>
-                          <Ionicons name="time-outline" size={12} color={catColor} />
+                  <GlassCard
+                    style={[styles.eventCard, ended && styles.eventCardEnded]}
+                    intensity={50}
+                  >
+                    <View style={[styles.catStripe, { backgroundColor: catColor }]}>
+                      <LinearGradient colors={[catColor, catColor + '66']} style={StyleSheet.absoluteFill} />
+                    </View>
+                    <View style={styles.eventContent}>
+                      <View style={styles.eventTop}>
+                        <View style={styles.eventTime}>
+                          <View style={[styles.timeIcon, { backgroundColor: catColor + '22' }]}>
+                            <Ionicons name="time-outline" size={12} color={catColor} />
+                          </View>
+                          <Text style={[styles.eventTimeText, { color: catColor }]}>
+                            {new Date(item.start_time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                          </Text>
                         </View>
-                        <Text style={[styles.eventTimeText, { color: catColor }]}>
-                          {new Date(item.start_time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
-                        </Text>
+                        {ended && (
+                          <View style={styles.endedBadge}>
+                            <Text style={styles.endedText}>Ended</Text>
+                          </View>
+                        )}
                       </View>
-                      {ended && (
-                        <View style={styles.endedBadge}>
-                          <Text style={styles.endedText}>Ended</Text>
+                      <Text style={[styles.eventTitle, ended && { opacity: 0.5 }]} numberOfLines={1}>{item.title}</Text>
+                      <View style={styles.eventMeta}>
+                        <Text style={styles.eventClub}>{item.club_name}</Text>
+                        <View style={styles.eventLoc}>
+                          <Ionicons name="location-outline" size={12} color={theme.textMuted} />
+                          <Text style={styles.eventLocText} numberOfLines={1}>{item.location || 'TBD'}</Text>
                         </View>
-                      )}
-                    </View>
-                    <Text style={[styles.eventTitle, ended && { opacity: 0.5 }]} numberOfLines={1}>{item.title}</Text>
-                    <View style={styles.eventMeta}>
-                      <Text style={styles.eventClub}>{item.club_name}</Text>
-                      <View style={styles.eventLoc}>
-                        <Ionicons name="location-outline" size={12} color={theme.textMuted} />
-                        <Text style={styles.eventLocText} numberOfLines={1}>{item.location || 'TBD'}</Text>
+                      </View>
+                      <View style={styles.eventActions}>
+                        <View style={styles.attendees}>
+                          <Ionicons name="people" size={14} color={theme.textMuted} />
+                          <Text style={styles.attendeesText}>{item.rsvp_count || 0}</Text>
+                        </View>
+                        {!ended && (
+                          <Bounceable
+                            style={[styles.rsvpBtn, item.user_rsvped && styles.rsvpBtnActive]}
+                            onPress={() => handleRSVP(item.id)}
+                          >
+                            <Ionicons name={item.user_rsvped ? 'heart' : 'heart-outline'} size={14} color={item.user_rsvped ? '#FFF' : theme.accent} />
+                            <Text style={[styles.rsvpText, item.user_rsvped && { color: '#FFF' }]}>{item.user_rsvped ? 'Going' : 'RSVP'}</Text>
+                          </Bounceable>
+                        )}
                       </View>
                     </View>
-                    <View style={styles.eventActions}>
-                      <View style={styles.attendees}>
-                        <Ionicons name="people" size={14} color={theme.textMuted} />
-                        <Text style={styles.attendeesText}>{item.rsvp_count || 0}</Text>
-                      </View>
-                      {!ended && (
-                        <TouchableOpacity
-                          style={[styles.rsvpBtn, item.user_rsvped && styles.rsvpBtnActive]}
-                          onPress={() => handleRSVP(item.id)}
-                        >
-                          <Ionicons name={item.user_rsvped ? 'heart' : 'heart-outline'} size={14} color={item.user_rsvped ? '#FFF' : theme.accent} />
-                          <Text style={[styles.rsvpText, item.user_rsvped && { color: '#FFF' }]}>{item.user_rsvped ? 'Going' : 'RSVP'}</Text>
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                  </View>
-                </TouchableOpacity>
+                  </GlassCard>
+                </Bounceable>
               </Animated.View>
             );
           }}
@@ -230,8 +235,8 @@ const styles = StyleSheet.create({
   eventCount: { color: theme.accent, fontSize: FontSize.xs, fontFamily: Fonts.heading },
 
   eventCard: {
-    flexDirection: 'row', backgroundColor: Glass.background, borderRadius: BorderRadius.md,
-    marginBottom: Spacing.sm, overflow: 'hidden', borderWidth: 1, borderColor: Glass.border,
+    flexDirection: 'row', backgroundColor: 'transparent', borderRadius: BorderRadius.md,
+    marginBottom: Spacing.sm, overflow: 'hidden', borderWidth: 0,
     ...Shadows.card,
   },
   eventCardEnded: { opacity: 0.6 },

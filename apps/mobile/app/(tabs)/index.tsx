@@ -17,6 +17,8 @@ import Animated, {
 import { Colors, Spacing, BorderRadius, FontSize, Fonts, Gradients, Glass, Shadows, AnimTiming } from '../../constants/Colors';
 import { useSpringPress, usePulse, useShimmer, useHeartBurst, useBouncingArrow, useFadeIn } from '../../constants/animations';
 import { events as eventsApi } from '../../services/api';
+import { BlurView } from 'expo-blur';
+import { Bounceable, GlassCard } from '../../components/GlassComponents';
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 const SWIPE_HINT_KEY = '@highlander/feed_swipe_hint_shown';
@@ -165,13 +167,10 @@ function EventCard({ event, cardHeight, friendsCount, onRSVP, onPress }: {
   };
 
   return (
-    <Animated.View style={[styles.card, { height: cardHeight }, pressStyle]}>
-      <TouchableOpacity
+    <Animated.View style={[styles.card, { height: cardHeight }]}>
+      <Bounceable
         style={StyleSheet.absoluteFill}
         onPress={onPress}
-        onPressIn={onPressIn}
-        onPressOut={onPressOut}
-        activeOpacity={1}
       >
         {/* Background */}
         {event.image_url ? (
@@ -182,14 +181,14 @@ function EventCard({ event, cardHeight, friendsCount, onRSVP, onPress }: {
 
         {/* Multi-stop gradient overlay */}
         <LinearGradient
-          colors={['rgba(5,8,16,0.4)', 'transparent', 'transparent', 'rgba(5,8,16,0.97)']}
+          colors={['rgba(5,8,16,0.4)', 'transparent', 'transparent', 'rgba(5,8,16,0.7)']}
           locations={[0, 0.2, 0.4, 1]}
           style={StyleSheet.absoluteFill}
         />
 
         {/* Category shimmer strip at top */}
         <LinearGradient
-          colors={[catColor + '30', 'transparent']}
+          colors={[catColor + '80', 'transparent']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={styles.catShimmer}
@@ -209,17 +208,18 @@ function EventCard({ event, cardHeight, friendsCount, onRSVP, onPress }: {
         {/* Right rail — glass buttons */}
         <View style={styles.rightRail}>
           <View style={styles.railItem}>
-            <AnimatedTouchable
-              style={[styles.railBtn, heartStyle]}
+            <Bounceable
+              style={[styles.railBtn]}
               onPress={handleRSVPPress}
-              activeOpacity={1}
             >
-              <Ionicons
-                name={event.user_rsvped ? 'heart' : 'heart-outline'}
-                size={26}
-                color={event.user_rsvped ? theme.danger : '#FFF'}
-              />
-            </AnimatedTouchable>
+              <Animated.View style={heartStyle}>
+                <Ionicons
+                  name={event.user_rsvped ? 'heart' : 'heart-outline'}
+                  size={26}
+                  color={event.user_rsvped ? theme.danger : '#FFF'}
+                />
+              </Animated.View>
+            </Bounceable>
             <Text style={styles.railCount}>{event.rsvp_count || 0}</Text>
           </View>
 
@@ -238,38 +238,44 @@ function EventCard({ event, cardHeight, friendsCount, onRSVP, onPress }: {
           )}
         </View>
 
-        {/* Bottom overlay — glass effect */}
+        {/* Bottom overlay — true Frosted Glass effect */}
         <View style={styles.cardBottom}>
-          <TouchableOpacity onPress={() => router.push(`/club/${event.club_id}` as any)}>
-            <Text style={styles.clubBadge}>{event.club_name}</Text>
-          </TouchableOpacity>
-          <Text style={styles.eventTitle} numberOfLines={2}>{event.title}</Text>
-          <View style={styles.metaRow}>
-            <Ionicons name="calendar-outline" size={12} color="rgba(255,255,255,0.65)" />
-            <Text style={styles.metaText}>
-              {new Date(event.start_time).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}
-            </Text>
-            {!!event.location && (
-              <>
-                <Text style={styles.metaDot}>·</Text>
-                <Ionicons name="location-outline" size={12} color={theme.accent} />
-                <Text style={[styles.metaText, { color: theme.accent }]} numberOfLines={1}>
-                  {event.location}
-                </Text>
-              </>
-            )}
-          </View>
-          {/* Attendee avatars */}
-          <View style={styles.attendeeRow}>
-            {[0, 1, 2].map((i) => (
-              <View key={i} style={[styles.miniAvatar, { marginLeft: i > 0 ? -10 : 0, backgroundColor: catColor, zIndex: 3 - i }]}>
-                <Ionicons name="person" size={8} color="#FFF" />
-              </View>
-            ))}
-            <Text style={styles.attendeeText}>{event.rsvp_count || 0}+ attending</Text>
+          <BlurView intensity={70} tint="dark" style={StyleSheet.absoluteFill} />
+          {/* subtle border top for edge lighting */}
+          <View style={{position: 'absolute', top: 0, left: 0, right: 0, height: 1, backgroundColor: 'rgba(255,255,255,0.15)'}} />
+          
+          <View style={{ padding: Spacing.lg }}>
+            <TouchableOpacity onPress={() => router.push(`/club/${event.club_id}` as any)}>
+              <Text style={styles.clubBadge}>{event.club_name}</Text>
+            </TouchableOpacity>
+            <Text style={styles.eventTitle} numberOfLines={2}>{event.title}</Text>
+            <View style={styles.metaRow}>
+              <Ionicons name="calendar-outline" size={12} color="rgba(255,255,255,0.65)" />
+              <Text style={styles.metaText}>
+                {new Date(event.start_time).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}
+              </Text>
+              {!!event.location && (
+                <>
+                  <Text style={styles.metaDot}>·</Text>
+                  <Ionicons name="location-outline" size={12} color={theme.accent} />
+                  <Text style={[styles.metaText, { color: theme.accent }]} numberOfLines={1}>
+                    {event.location}
+                  </Text>
+                </>
+              )}
+            </View>
+            {/* Attendee avatars */}
+            <View style={styles.attendeeRow}>
+              {[0, 1, 2].map((i) => (
+                <View key={i} style={[styles.miniAvatar, { marginLeft: i > 0 ? -10 : 0, backgroundColor: catColor, zIndex: 3 - i }]}>
+                  <Ionicons name="person" size={8} color="#FFF" />
+                </View>
+              ))}
+              <Text style={styles.attendeeText}>{event.rsvp_count || 0}+ attending</Text>
+            </View>
           </View>
         </View>
-      </TouchableOpacity>
+      </Bounceable>
     </Animated.View>
   );
 }
@@ -556,10 +562,14 @@ const styles = StyleSheet.create({
     color: '#FFF', fontSize: 12,
   },
 
-  // Card bottom
+  // Card bottom (Frosted glass)
   cardBottom: {
-    position: 'absolute', left: Spacing.md, right: 72, bottom: Spacing.xl + 24,
-    zIndex: 10, gap: 5,
+    position: 'absolute', left: 0, right: 0, bottom: 0,
+    zIndex: 10,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    overflow: 'hidden',
+    paddingBottom: 85, // clear bottom tabs
   },
   clubBadge: {
     fontFamily: Fonts.headingMed,
