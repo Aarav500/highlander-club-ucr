@@ -55,10 +55,10 @@ async function request(path: string, options: RequestInit = {}) {
 // Auth — UCR CAS SSO + Email Code Fallback
 // ═══════════════════════════════════════════════════════════════════════════════
 export const auth = {
-  // Get the CAS login URL for redirect
+  // Build CAS URL directly — goes straight to cas.ucr.edu, no server hop
   getCASLoginUrl: (platform: string = 'mobile') => {
-    const baseUrl = API_URL || PRODUCTION_API;
-    return `${baseUrl}/api/auth/cas/login?platform=${platform}`;
+    const callbackUrl = `${PRODUCTION_API}/api/auth/cas/callback?platform=${platform}`;
+    return `https://cas.ucr.edu/cas/login?service=${encodeURIComponent(callbackUrl)}`;
   },
   // Validate a CAS callback (used when deep link returns with ticket)
   casCallback: (ticket: string) =>
