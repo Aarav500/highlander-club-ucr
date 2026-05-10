@@ -10,7 +10,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown, FadeIn, ZoomIn, useAnimatedScrollHandler, useSharedValue, useAnimatedStyle, interpolate, Extrapolation } from 'react-native-reanimated';
 import { Colors, Spacing, BorderRadius, FontSize, Fonts, Glass, Shadows, Gradients } from '../../constants/Colors';
 import { useSpringPress } from '../../constants/animations';
-import { events as eventsApi, getAuthToken } from '../../services/api';
+import { events as eventsApi, getAuthToken, API_URL } from '../../services/api';
 import { Bounceable, GlassCard } from '../../components/GlassComponents';
 import { BlurView } from 'expo-blur';
 
@@ -78,12 +78,12 @@ export default function EventDetailScreen() {
       if (!result.canceled && result.assets?.length > 0) {
         setUploading(true);
         const asset = result.assets[0];
-        const res = await fetch(`http://localhost:3001/api/upload/presign?contentType=image/jpeg`, { headers: { Authorization: `Bearer ${getAuthToken()}` } });
+        const res = await fetch(`${API_URL}/api/upload/presign?contentType=image/jpeg`, { headers: { Authorization: `Bearer ${getAuthToken()}` } });
         const { uploadUrl, publicUrl } = await res.json();
         const imageRes = await fetch(asset.uri); const blob = await imageRes.blob();
         await fetch(uploadUrl, { method: 'PUT', body: blob, headers: { 'Content-Type': 'image/jpeg' } });
         await eventsApi.update(id as string, { photo_url: publicUrl });
-        await fetch(`http://localhost:3001/api/events/${id}/photos`, {
+        await fetch(`${API_URL}/api/events/${id}/photos`, {
           method: 'POST', headers: { Authorization: `Bearer ${getAuthToken()}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ photo_url: publicUrl })
         });
@@ -97,7 +97,7 @@ export default function EventDetailScreen() {
     Alert.alert('Delete Photo', 'Are you sure?', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: async () => {
-        try { await fetch(`http://localhost:3001/api/events/${id}/photos/${photoId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${getAuthToken()}` } }); loadEvent(); } catch {}
+        try { await fetch(`${API_URL}/api/events/${id}/photos/${photoId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${getAuthToken()}` } }); loadEvent(); } catch {}
       }}
     ]);
   };
