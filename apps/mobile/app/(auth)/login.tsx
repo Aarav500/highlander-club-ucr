@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
   StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform,
-  Linking, Dimensions,
+  Dimensions,
 } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -97,31 +98,26 @@ export default function LoginScreen() {
     }, 150);
   };
 
-  useEffect(() => {
-    const handleDeepLink = async (event: { url: string }) => {
-      const url = event.url;
-      if (url.includes('auth/callback')) {
-        const params = new URLSearchParams(url.split('?')[1] || '');
+  const handleCASLogin = async () => {
+    setLoading(true); setError('');
+    try {
+      const casUrl = auth.getCASLoginUrl('mobile');
+      // openAuthSessionAsync opens an in-app browser and automatically
+      // captures the redirect back to unipulse:// — no deep link listener needed
+      const result = await WebBrowser.openAuthSessionAsync(casUrl, 'unipulse://auth/callback');
+      if (result.type === 'success' && result.url) {
+        const params = new URLSearchParams(result.url.split('?')[1] || '');
         const token = params.get('token');
         if (token) {
           await AsyncStorage.setItem('auth_token', token);
           setAuthToken(token);
           router.replace('/(tabs)' as any);
+        } else {
+          setError('Login failed — no token returned. Try again.');
         }
+      } else if (result.type === 'cancel') {
+        setError('Login cancelled');
       }
-    };
-    Linking.getInitialURL().then((url) => { if (url) handleDeepLink({ url }); });
-    const subscription = Linking.addEventListener('url', handleDeepLink);
-    return () => subscription.remove();
-  }, []);
-
-  const handleCASLogin = async () => {
-    setLoading(true); setError('');
-    try {
-      const casUrl = auth.getCASLoginUrl('mobile');
-      const supported = await Linking.canOpenURL(casUrl);
-      if (supported) await Linking.openURL(casUrl);
-      else setError('Cannot open UCR login page');
     } catch (err: any) { setError(err.message || 'Failed to open UCR login'); }
     finally { setLoading(false); }
   };

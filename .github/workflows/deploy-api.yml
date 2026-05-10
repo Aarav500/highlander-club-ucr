@@ -87,6 +87,9 @@ jobs:
           repo    = os.environ['GITHUB_REPO']
           pat     = os.environ.get('GITHUB_PAT', '')
           domain  = 'unipulse.aarav-shah.com'
+          # Use IP for CAS callback so UCR SSO can redirect back correctly
+          # (domain DNS may not be configured; IP always works)
+          api_ip  = '13.221.61.113'
 
           # Build .env for docker-compose — base64 encoded for safety
           pg_pass = os.environ.get('POSTGRES_PASSWORD', 'unipulse_secret_2026')
@@ -96,8 +99,8 @@ jobs:
               f'POSTGRES_USER=unipulse',
               f'POSTGRES_PASSWORD={pg_pass}',
               f'JWT_SECRET={os.environ["JWT_SECRET"]}',
-              f'API_BASE_URL=http://{domain}',
-              f'APP_URL=http://{domain}',
+              f'API_BASE_URL=http://{api_ip}:3001',
+              f'APP_URL=http://{api_ip}:8080',
               'ALLOWED_ORIGINS=*',
               f'AWS_ACCESS_KEY_ID={os.environ["APP_AWS_KEY"]}',
               f'AWS_SECRET_ACCESS_KEY={os.environ["APP_AWS_SECRET"]}',
