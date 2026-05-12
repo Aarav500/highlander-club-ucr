@@ -225,7 +225,7 @@ jobs:
             --instance-ids "${{ secrets.EC2_INSTANCE_ID }}" \
             --document-name "AWS-RunShellScript" \
             --parameters file:///tmp/ssm-params.json \
-            --timeout-seconds 900 \
+            --timeout-seconds 300 \
             --output text \
             --query "Command.CommandId")
           echo "command_id=$COMMAND_ID" >> $GITHUB_OUTPUT
