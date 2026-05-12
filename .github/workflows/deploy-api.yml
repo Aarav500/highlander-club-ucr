@@ -138,10 +138,11 @@ jobs:
               f'usermod -aG docker {u} && '
               'echo "Docker: $(/usr/bin/docker --version)"',
 
-              # ── 2. Docker Compose plugin ─────────────────────────────────
+              # ── 2. Docker Compose standalone binary ──────────────────────
               'echo "=== Step 2: Docker Compose ===" && '
-              'apt-get install -y -qq docker-compose-plugin && '
-              'echo "Compose: $(/usr/bin/docker compose version)"',
+              'curl -fsSL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose && '
+              'chmod +x /usr/local/bin/docker-compose && '
+              'echo "Compose: $(/usr/local/bin/docker-compose version)"',
 
               # ── 3. Git ───────────────────────────────────────────────────
               'echo "=== Step 3: Git ===" && '
@@ -184,11 +185,11 @@ jobs:
               # ── 8. Docker Compose up ─────────────────────────────────────
               f'echo "=== Step 8: Docker Compose up ===" && '
               f'cd {app_dir} && '
-              f'/usr/bin/docker compose down --remove-orphans 2>/dev/null || true && '
+              f'/usr/local/bin/docker-compose down --remove-orphans 2>/dev/null || true && '
               f'echo "Building and starting containers..." && '
-              f'/usr/bin/docker compose up -d --build --force-recreate 2>&1 | tail -30 && '
+              f'/usr/local/bin/docker-compose up -d --build --force-recreate 2>&1 | tail -30 && '
               f'echo "" && echo "=== Container Status ===" && '
-              f'/usr/bin/docker compose ps',
+              f'/usr/local/bin/docker-compose ps',
 
               # ── 9. Wait for health ───────────────────────────────────────
               'echo "" && echo "=== Step 9: Health checks (waiting 20s) ===" && '
