@@ -108,26 +108,28 @@ jobs:
 
           clone = f'https://x-access-token:{pat}@github.com/{repo}.git' if pat else f'https://github.com/{repo}.git'
 
-          script = f"""#!/bin/bash
-          set -e
-          export DEBIAN_FRONTEND=noninteractive
-          apt-get update -qq
-          apt-get install -y -qq docker.io docker-compose git
-          systemctl start docker
-          usermod -aG docker {u}
-          if [ -d {app_dir}/.git ]; then
-            git -C {app_dir} fetch origin main -q && git -C {app_dir} reset --hard origin/main -q
-          else
-            git clone -q {clone} {app_dir}
-          fi
-          printf '%s' '{env}' | base64 -d > {app_dir}/.env
-          cd {app_dir}
-          docker-compose down --remove-orphans 2>/dev/null || true
-          docker-compose up -d --build --force-recreate
-          sleep 15
-          curl -sf http://localhost:3001/health && echo 'API healthy' || echo 'API not responding'
-          docker-compose ps
-          """
+          import textwrap
+          script = textwrap.dedent(f"""
+            set -e
+            export DEBIAN_FRONTEND=noninteractive
+            apt-get update -qq
+            apt-get install -y -qq docker.io docker-compose git
+            systemctl start docker || true
+            usermod -aG docker {u} || true
+            if [ -d {app_dir}/.git ]; then
+              git -C {app_dir} fetch origin main -q
+              git -C {app_dir} reset --hard origin/main -q
+            else
+              git clone -q {clone} {app_dir}
+            fi
+            printf '%s' '{env}' | base64 -d > {app_dir}/.env
+            cd {app_dir}
+            /usr/bin/docker-compose down --remove-orphans 2>/dev/null || true
+            /usr/bin/docker-compose up -d --build --force-recreate
+            sleep 15
+            curl -sf http://localhost:3001/health && echo OK || echo FAIL
+            /usr/bin/docker-compose ps
+          """).strip()
 
           import json
           with open('/tmp/ssm-params.json', 'w') as f:
