@@ -61,9 +61,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      # Build the SSM command JSON using Python to safely handle
-      # secrets with special characters (no shell-escaping issues).
-      - name: Build SSM Docker deploy commands
+      - name: Deploy via SSM
         env:
           EC2_USER:       ${{ secrets.EC2_USER }}
           JWT_SECRET:     ${{ secrets.JWT_SECRET }}
@@ -80,143 +78,62 @@ jobs:
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           EC2_PUBLIC_IP:  ${{ secrets.EC2_PUBLIC_IP }}
         run: |
-          python3 << 'PYEOF'
           import json, os, base64
-
-          u       = os.environ['EC2_USER']           # ec2-user or ubuntu
+          u = os.environ['EC2_USER']
           app_dir = f'/home/{u}/unipulse'
-          repo    = os.environ['GITHUB_REPO']
-          pat     = os.environ.get('GITHUB_PAT', '')
-          domain  = 'unipulse.aarav-shah.com'
-          # Use IP for CAS callback so UCR SSO can redirect back correctly
-          # (domain DNS may not be configured; IP always works)
-          api_ip  = os.environ.get('EC2_PUBLIC_IP', '')
+          pat = os.environ.get('GITHUB_PAT', '')
+          repo = os.environ['GITHUB_REPO']
+          ip = os.environ.get('EC2_PUBLIC_IP', '')
+          pg = os.environ.get('POSTGRES_PASSWORD', 'secret')
 
-          # Build .env for docker-compose — base64 encoded for safety
-          pg_pass = os.environ.get('POSTGRES_PASSWORD', 'unipulse_secret_2026')
-          env_content = '\n'.join([
-              'NODE_ENV=production',
-              f'POSTGRES_DB=unipulse',
-              f'POSTGRES_USER=unipulse',
-              f'POSTGRES_PASSWORD={pg_pass}',
-              f'JWT_SECRET={os.environ["JWT_SECRET"]}',
-              f'API_BASE_URL=http://{api_ip}:3001',
-              f'APP_URL=http://{api_ip}:8080',
-              'ALLOWED_ORIGINS=*',
-              f'AWS_ACCESS_KEY_ID={os.environ["APP_AWS_KEY"]}',
-              f'AWS_SECRET_ACCESS_KEY={os.environ["APP_AWS_SECRET"]}',
-              f'AWS_REGION={os.environ["APP_AWS_REGION"]}',
-              f'AWS_S3_BUCKET={os.environ["AWS_S3_BUCKET"]}',
-              f'SMTP_HOST={os.environ["SMTP_HOST"]}',
-              f'SMTP_PORT={os.environ["SMTP_PORT"]}',
-              'SMTP_SECURE=false',
-              f'SMTP_USER={os.environ["SMTP_USER"]}',
-              f'SMTP_PASS={os.environ["SMTP_PASS"]}',
-              'CAS_BASE_URL=https://cas.ucr.edu/cas',
-          ])
-          env_b64 = base64.b64encode(env_content.encode()).decode()
+          env = base64.b64encode('\n'.join([
+            'NODE_ENV=production',
+            'POSTGRES_DB=unipulse', 'POSTGRES_USER=unipulse',
+            f'POSTGRES_PASSWORD={pg}',
+            f'JWT_SECRET={os.environ["JWT_SECRET"]}',
+            f'API_BASE_URL=http://{ip}:3001',
+            f'APP_URL=http://{ip}:3001',
+            'ALLOWED_ORIGINS=*',
+            f'AWS_ACCESS_KEY_ID={os.environ["APP_AWS_KEY"]}',
+            f'AWS_SECRET_ACCESS_KEY={os.environ["APP_AWS_SECRET"]}',
+            f'AWS_REGION={os.environ["APP_AWS_REGION"]}',
+            f'AWS_S3_BUCKET={os.environ["AWS_S3_BUCKET"]}',
+            f'SMTP_HOST={os.environ["SMTP_HOST"]}',
+            f'SMTP_PORT={os.environ["SMTP_PORT"]}',
+            'SMTP_SECURE=false',
+            f'SMTP_USER={os.environ["SMTP_USER"]}',
+            f'SMTP_PASS={os.environ["SMTP_PASS"]}',
+            'CAS_BASE_URL=https://cas.ucr.edu/cas',
+          ]).encode()).decode()
 
-          # Git clone URL
-          clone_url = (
-              f'https://x-access-token:{pat}@github.com/{repo}.git'
-              if pat else
-              f'https://github.com/{repo}.git'
-          )
-          clean_url = f'https://github.com/{repo}.git'
+          clone = f'https://x-access-token:{pat}@github.com/{repo}.git' if pat else f'https://github.com/{repo}.git'
 
-          cmds = [
-              'set -e',
-              'export DEBIAN_FRONTEND=noninteractive',
+          script = f"""#!/bin/bash
+          set -e
+          export DEBIAN_FRONTEND=noninteractive
+          apt-get update -qq
+          apt-get install -y -qq docker.io docker-compose git
+          systemctl start docker
+          usermod -aG docker {u}
+          if [ -d {app_dir}/.git ]; then
+            git -C {app_dir} fetch origin main -q && git -C {app_dir} reset --hard origin/main -q
+          else
+            git clone -q {clone} {app_dir}
+          fi
+          printf '%s' '{env}' | base64 -d > {app_dir}/.env
+          cd {app_dir}
+          docker-compose down --remove-orphans 2>/dev/null || true
+          docker-compose up -d --build --force-recreate
+          sleep 15
+          curl -sf http://localhost:3001/health && echo 'API healthy' || echo 'API not responding'
+          docker-compose ps
+          """
 
-              # ── 1. Install Docker via apt (removes snap version if present) ─
-              'echo "=== Step 1: Docker ===" && '
-              'snap remove docker 2>/dev/null || true && '
-              'apt-get update -qq && '
-              'apt-get install -y -qq docker.io && '
-              'systemctl enable docker && '
-              'systemctl start docker && '
-              f'usermod -aG docker {u} && '
-              'echo "Docker: $(/usr/bin/docker --version)"',
-
-              # ── 2. Docker Compose standalone binary ──────────────────────
-              'echo "=== Step 2: Docker Compose ===" && '
-              'apt-get install -y -qq docker-compose && '
-              'echo "Compose: $(docker-compose version)"',
-
-              # ── 3. Git ───────────────────────────────────────────────────
-              'echo "=== Step 3: Git ===" && '
-              '(command -v git &>/dev/null && echo "Git: $(git --version)") || '
-              '(apt-get update -qq && apt-get install -y -qq git && echo "Git installed")',
-
-              # ── 4. Git credentials ───────────────────────────────────────
-              f'echo "=== Step 4: Git credentials ===" && '
-              f'sudo -u {u} git config --global credential.helper store && '
-              f'printf "https://x-access-token:{pat}@github.com\\n" | '
-              f'sudo -u {u} tee /home/{u}/.git-credentials > /dev/null && '
-              f'chmod 600 /home/{u}/.git-credentials && echo "Credentials set"'
-              if pat else
-              f'echo "=== Step 4: skipped (public repo) ==="',
-
-              # ── 5. Clone or pull repo ────────────────────────────────────
-              f'echo "=== Step 5: Sync repo ===" && '
-              f'if [ -d {app_dir}/.git ]; then '
-              f'  sudo -u {u} git -C {app_dir} fetch origin main --quiet && '
-              f'  sudo -u {u} git -C {app_dir} reset --hard origin/main --quiet && '
-              f'  echo "Repo updated"; '
-              f'else '
-              f'  sudo -u {u} git clone --quiet {clone_url} {app_dir} && '
-              f'  sudo -u {u} git -C {app_dir} remote set-url origin {clean_url} && '
-              f'  echo "Repo cloned"; '
-              f'fi',
-
-              # ── 6. Write .env ────────────────────────────────────────────
-              f'echo "=== Step 6: Write .env ===" && '
-              f'printf "%s" "{env_b64}" | base64 -d > {app_dir}/.env && '
-              f'chown {u}:{u} {app_dir}/.env && '
-              f'chmod 600 {app_dir}/.env && '
-              f'echo ".env written ($(wc -l < {app_dir}/.env) vars)"',
-
-              # ── 7. Stop old PM2 if running ───────────────────────────────
-              f'echo "=== Step 7: Cleanup ===" && '
-              f'(sudo -u {u} bash -c "export PATH=/usr/local/bin:$PATH && pm2 kill" 2>/dev/null || true) && '
-              f'echo "Old processes cleaned"',
-
-              # ── 8. Docker Compose up ─────────────────────────────────────
-              f'echo "=== Step 8: Docker Compose up ===" && '
-              f'cd {app_dir} && '
-              f'docker-compose down --remove-orphans 2>/dev/null || true && '
-              f'echo "Building and starting containers..." && '
-              f'docker-compose up -d --build --force-recreate 2>&1 | tail -30 && '
-              f'echo "" && echo "=== Container Status ===" && '
-              f'docker-compose ps',
-
-              # ── 9. Wait for health ───────────────────────────────────────
-              'echo "" && echo "=== Step 9: Health checks (waiting 20s) ===" && '
-              'sleep 20 && '
-              'echo "Checking API..." && '
-              '(curl -sf http://localhost:3001/health && echo "✅ API healthy") || echo "❌ API not responding" && '
-              'echo "Checking Web..." && '
-              '(curl -sf http://localhost:8080 > /dev/null && echo "✅ Web healthy") || echo "❌ Web not responding" && '
-              'echo "Checking Nginx..." && '
-              '(curl -sf http://localhost:80 > /dev/null && echo "✅ Nginx healthy") || echo "❌ Nginx not responding"',
-
-              # ── 10. Show container logs ──────────────────────────────────
-              f'echo "" && echo "=== Container Logs (last 10 lines each) ===" && '
-              f'echo "--- db ---" && /usr/bin/docker logs unipulse-db-1 --tail=5 2>&1 || true && '
-              f'echo "--- api ---" && /usr/bin/docker logs unipulse-api-1 --tail=10 2>&1 || true && '
-              f'echo "--- web ---" && /usr/bin/docker logs unipulse-web-1 --tail=5 2>&1 || true && '
-              f'echo "--- nginx ---" && /usr/bin/docker logs unipulse-nginx-1 --tail=5 2>&1 || true',
-
-              # ── Done ─────────────────────────────────────────────────────
-              f'echo "" && echo "=== ✅ Deployment complete ===" && '
-              f'echo "🌐 http://{domain}" && '
-              f'echo "📡 http://{domain}/health"',
-          ]
-
+          import json
           with open('/tmp/ssm-params.json', 'w') as f:
-              json.dump({'commands': cmds}, f)
-          print('✅ SSM parameters written')
-          PYEOF
+            json.dump({'commands': [script]}, f)
+          print('Done')
+        shell: python3 {0}
 
       - name: Send SSM command
         id: ssm
