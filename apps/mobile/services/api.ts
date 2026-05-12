@@ -3,7 +3,7 @@ import { Platform } from 'react-native';
 
 // Set EXPO_PUBLIC_API_URL in your .env or EAS environment variables
 // e.g. EXPO_PUBLIC_API_URL=http://ec2-xx-xx-xx-xx.compute.amazonaws.com:3001
-const PRODUCTION_API = process.env.EXPO_PUBLIC_API_URL || 'http://13.221.61.113:3001';
+const PRODUCTION_API = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3001';
 
 const getApiUrl = () => {
   // Web uses same-origin proxy (server.js forwards /api → EC2 API)
