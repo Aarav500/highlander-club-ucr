@@ -126,30 +126,22 @@ jobs:
 
           cmds = [
               'set -e',
-              'export PATH=/snap/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
               'export DEBIAN_FRONTEND=noninteractive',
 
-              # ── 1. Install Docker (quiet) ────────────────────────────────
+              # ── 1. Install Docker via apt (removes snap version if present) ─
               'echo "=== Step 1: Docker ===" && '
-              'if command -v docker &>/dev/null; then '
-              '  echo "Docker already installed: $(docker --version)"; '
-              'else '
-              '  echo "Installing Docker..." && '
-              '  curl -fsSL https://get.docker.com 2>/dev/null | bash -s -- --quiet &>/dev/null && '
-              '  systemctl enable docker &>/dev/null && '
-              '  systemctl start docker && '
-              f'  usermod -aG docker {u} && '
-              '  echo "Docker installed: $(docker --version)"; '
-              'fi',
+              'snap remove docker 2>/dev/null || true && '
+              'apt-get update -qq && '
+              'apt-get install -y -qq docker.io && '
+              'systemctl enable docker && '
+              'systemctl start docker && '
+              f'usermod -aG docker {u} && '
+              'echo "Docker: $(/usr/bin/docker --version)"',
 
               # ── 2. Docker Compose plugin ─────────────────────────────────
               'echo "=== Step 2: Docker Compose ===" && '
-              'if docker compose version &>/dev/null; then '
-              '  echo "Compose: $(docker compose version)"; '
-              'else '
-              '  apt-get update -qq && apt-get install -y -qq docker-compose-plugin && '
-              '  echo "Compose installed: $(docker compose version)"; '
-              'fi',
+              'apt-get install -y -qq docker-compose-plugin && '
+              'echo "Compose: $(/usr/bin/docker compose version)"',
 
               # ── 3. Git ───────────────────────────────────────────────────
               'echo "=== Step 3: Git ===" && '
@@ -192,11 +184,11 @@ jobs:
               # ── 8. Docker Compose up ─────────────────────────────────────
               f'echo "=== Step 8: Docker Compose up ===" && '
               f'cd {app_dir} && '
-              f'docker compose down --remove-orphans 2>/dev/null || true && '
+              f'/usr/bin/docker compose down --remove-orphans 2>/dev/null || true && '
               f'echo "Building and starting containers..." && '
-              f'docker compose up -d --build --force-recreate 2>&1 | tail -30 && '
+              f'/usr/bin/docker compose up -d --build --force-recreate 2>&1 | tail -30 && '
               f'echo "" && echo "=== Container Status ===" && '
-              f'docker compose ps',
+              f'/usr/bin/docker compose ps',
 
               # ── 9. Wait for health ───────────────────────────────────────
               'echo "" && echo "=== Step 9: Health checks (waiting 20s) ===" && '
@@ -210,10 +202,10 @@ jobs:
 
               # ── 10. Show container logs ──────────────────────────────────
               f'echo "" && echo "=== Container Logs (last 10 lines each) ===" && '
-              f'echo "--- db ---" && docker logs unipulse-db-1 --tail=5 2>&1 || true && '
-              f'echo "--- api ---" && docker logs unipulse-api-1 --tail=10 2>&1 || true && '
-              f'echo "--- web ---" && docker logs unipulse-web-1 --tail=5 2>&1 || true && '
-              f'echo "--- nginx ---" && docker logs unipulse-nginx-1 --tail=5 2>&1 || true',
+              f'echo "--- db ---" && /usr/bin/docker logs unipulse-db-1 --tail=5 2>&1 || true && '
+              f'echo "--- api ---" && /usr/bin/docker logs unipulse-api-1 --tail=10 2>&1 || true && '
+              f'echo "--- web ---" && /usr/bin/docker logs unipulse-web-1 --tail=5 2>&1 || true && '
+              f'echo "--- nginx ---" && /usr/bin/docker logs unipulse-nginx-1 --tail=5 2>&1 || true',
 
               # ── Done ─────────────────────────────────────────────────────
               f'echo "" && echo "=== ✅ Deployment complete ===" && '
