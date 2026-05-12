@@ -126,7 +126,8 @@ jobs:
 
           cmds = [
               'set -e',
-              'export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',
+              'export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/bin',
+              'ln -sf /usr/bin/docker /usr/local/bin/docker 2>/dev/null || true',
               'export DEBIAN_FRONTEND=noninteractive',
 
               # ── 1. Install Docker (quiet) ────────────────────────────────
