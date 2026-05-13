@@ -13,6 +13,15 @@ export const auth = {
   verifyOTP: async (email: string, token: string) => {
     const { data, error } = await supabase.auth.verifyOtp({ email, token, type: 'email' });
     if (error) throw error;
+    // Ensure profile exists (fallback if trigger failed)
+    if (data.user) {
+      await supabase.from('profiles').upsert({
+        id: data.user.id,
+        email: data.user.email,
+        name: data.user.email?.split('@')[0] || 'UCR Student',
+        display_name: data.user.email?.split('@')[0] || 'UCR Student',
+      }, { onConflict: 'id', ignoreDuplicates: true });
+    }
     return data;
   },
 
