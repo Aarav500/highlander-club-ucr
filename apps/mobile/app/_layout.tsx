@@ -55,11 +55,15 @@ export default function RootLayout() {
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setIsLoggedIn(!!session);
-      if (!session) router.replace('/(auth)/login' as any);
-      else router.replace('/(tabs)' as any);
     });
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!isReady) return;
+    if (!isLoggedIn) router.replace('/(auth)/login' as any);
+    else router.replace('/(tabs)' as any);
+  }, [isReady, isLoggedIn]);
 
   // Push notifications setup
   useEffect(() => {
@@ -92,11 +96,6 @@ export default function RootLayout() {
   }, [fontsLoaded, isReady]);
 
   if (!fontsLoaded || !isReady) return null;
-
-  if (!isLoggedIn) {
-    router.replace('/(auth)/login' as any);
-    return null;
-  }
 
   return (
     <ThemeProvider value={HighlanderDark}>
