@@ -163,6 +163,22 @@ export const storageApi = {
   },
 };
 
+// Search — queries both Supabase clubs/events + Highlander Link
+export const search = {
+  clubs: async (query: string) => {
+    // First search local DB
+    const { data } = await supabase.from('clubs').select('*').ilike('name', `%${query}%`).limit(10);
+    // Also search Highlander Link
+    const hlClubs = await highlanderLink.search(query);
+    const hlMapped = hlClubs.map((c: any) => ({ ...c, from_highlander_link: true }));
+    return [...(data || []), ...hlMapped];
+  },
+  events: async (query: string) => {
+    const { data } = await supabase.from('events').select('*, clubs(name, logo_url)').ilike('title', `%${query}%`).limit(10);
+    return data || [];
+  },
+};
+
 // Legacy compat exports
 export const API_URL = '';
 export const getAuthToken = async () => {
