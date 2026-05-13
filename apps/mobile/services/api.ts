@@ -16,6 +16,11 @@ export const auth = {
     return data;
   },
 
+  resetPassword: async (email: string) => {
+    if (!email.endsWith('@ucr.edu')) throw new Error('Only @ucr.edu emails allowed');
+    const { error } = await supabase.auth.resetPasswordForEmail(email);
+    if (error) throw error;
+  },
   signOut: () => supabase.auth.signOut(),
   getSession: () => supabase.auth.getSession(),
   onAuthStateChange: (cb: any) => supabase.auth.onAuthStateChange(cb),
