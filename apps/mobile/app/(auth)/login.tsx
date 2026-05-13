@@ -4,10 +4,8 @@ import {
   StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform,
   Dimensions,
 } from 'react-native';
-import * as WebBrowser from 'expo-web-browser';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   useSharedValue, useAnimatedStyle, withSpring, withTiming,
@@ -16,7 +14,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Colors, Spacing, BorderRadius, FontSize, Fonts, Glass, Shadows, Gradients } from '../../constants/Colors';
 import { useFloating, useSpringPress, useGlowPulse } from '../../constants/animations';
-import { auth, setAuthToken } from '../../services/api';
+import { auth } from '../../services/api';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const theme = Colors.dark;
@@ -98,34 +96,12 @@ export default function LoginScreen() {
     }, 150);
   };
 
-  const handleCASLogin = async () => {
-    setLoading(true); setError('');
-    try {
-      const casUrl = auth.getCASLoginUrl('mobile');
-      // openAuthSessionAsync opens an in-app browser and automatically
-      // captures the redirect back to unipulse:// — no deep link listener needed
-      const result = await WebBrowser.openAuthSessionAsync(casUrl, 'unipulse://auth/callback');
-      if (result.type === 'success' && result.url) {
-        const params = new URLSearchParams(result.url.split('?')[1] || '');
-        const token = params.get('token');
-        if (token) {
-          await AsyncStorage.setItem('auth_token', token);
-          setAuthToken(token);
-          router.replace('/(tabs)' as any);
-        } else {
-          setError('Login failed — no token returned. Try again.');
-        }
-      } else if (result.type === 'cancel') {
-        setError('Login cancelled');
-      }
-    } catch (err: any) { setError(err.message || 'Failed to open UCR login'); }
-    finally { setLoading(false); }
-  };
+  const handleCASLogin = () => switchToFallback(); // CAS removed — use email OTP
 
   const handleSendCode = async () => {
     if (!email.endsWith('@ucr.edu')) { setError('Please use your @ucr.edu email'); return; }
     setLoading(true); setError('');
-    try { await auth.login(email); setStep('code'); }
+    try { await auth.sendOTP(email); setStep('code'); }
     catch (err: any) { setError(err.message || 'Failed to send code'); }
     finally { setLoading(false); }
   };
@@ -134,11 +110,9 @@ export default function LoginScreen() {
     if (code.length !== 6) { setError('Please enter the 6-digit code'); return; }
     setLoading(true); setError('');
     try {
-      const result = await auth.verify(email, code);
-      await AsyncStorage.setItem('auth_token', result.token);
-      setAuthToken(result.token);
+      await auth.verifyOTP(email, code);
       router.replace('/(tabs)' as any);
-    } catch (err: any) { setError(err.message || 'Invalid code'); }
+    } catch (err: any) { setError(err.message || 'Invalid or expired code'); }
     finally { setLoading(false); }
   };
 

@@ -1,185 +1,162 @@
-// API Service — connects mobile app to UniPulse backend
-import { Platform } from 'react-native';
+import { supabase } from '../lib/supabase';
 
-// Set EXPO_PUBLIC_API_URL in your .env or EAS environment variables
-// e.g. EXPO_PUBLIC_API_URL=http://ec2-xx-xx-xx-xx.compute.amazonaws.com:3001
-const PRODUCTION_API = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3001';
-
-const getApiUrl = () => {
-  // Web uses same-origin proxy (server.js forwards /api → EC2 API)
-  if (Platform.OS === 'web') return '';
-  // Always use EC2 if EXPO_PUBLIC_API_URL is set (works on real devices in dev too)
-  if (process.env.EXPO_PUBLIC_API_URL) return process.env.EXPO_PUBLIC_API_URL;
-  // Production builds always use EC2 fallback
-  if (!__DEV__) return PRODUCTION_API;
-  // Dev: Android emulator uses 10.0.2.2, iOS simulator uses localhost
-  if (Platform.OS === 'android') return 'http://10.0.2.2:3001';
-  return 'http://localhost:3001';
-};
-export const API_URL = getApiUrl();
-
-let authToken: string | null = null;
-
-export function setAuthToken(token: string | null) {
-  authToken = token;
-}
-
-export function getAuthToken() {
-  return authToken;
-}
-
-async function request(path: string, options: RequestInit = {}) {
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(options.headers as Record<string, string> || {}),
-  };
-
-  if (authToken) {
-    headers['Authorization'] = `Bearer ${authToken}`;
-  }
-
-  const response = await fetch(`${API_URL}${path}`, {
-    ...options,
-    headers,
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Network error' }));
-    throw new Error(error.error || `HTTP ${response.status}`);
-  }
-
-  return response.json();
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// Auth — UCR CAS SSO + Email Code Fallback
-// ═══════════════════════════════════════════════════════════════════════════════
+// ── Auth ─────────────────────────────────────────────────────────────────────
 export const auth = {
-  // Build CAS URL directly — goes straight to cas.ucr.edu, no server hop
-  getCASLoginUrl: (platform: string = 'mobile') => {
-    const callbackUrl = `${PRODUCTION_API}/api/auth/cas/callback?platform=${platform}`;
-    return `https://cas.ucr.edu/cas/login?service=${encodeURIComponent(callbackUrl)}`;
+  // Send OTP to @ucr.edu email
+  sendOTP: async (email: string) => {
+    if (!email.endsWith('@ucr.edu')) throw new Error('Only @ucr.edu emails allowed');
+    const { error } = await supabase.auth.signInWithOtp({ email });
+    if (error) throw error;
   },
-  // Validate a CAS callback (used when deep link returns with ticket)
-  casCallback: (ticket: string) =>
-    request(`/api/auth/cas/callback?ticket=${encodeURIComponent(ticket)}&platform=mobile`),
-  // Email-code flow (fallback for development)
-  login: (email: string) =>
-    request('/api/auth/login', { method: 'POST', body: JSON.stringify({ email }) }),
-  verify: (email: string, code: string) =>
-    request('/api/auth/verify', { method: 'POST', body: JSON.stringify({ email, code }) }),
-  // Session
-  logout: () =>
-    request('/api/auth/logout', { method: 'POST' }),
-  me: () =>
-    request('/api/auth/me'),
-};
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// Events
-// ═══════════════════════════════════════════════════════════════════════════════
-export const events = {
-  list: (params?: Record<string, string>) => {
-    const query = params ? '?' + new URLSearchParams(params).toString() : '';
-    return request(`/api/events${query}`);
+  // Verify OTP code
+  verifyOTP: async (email: string, token: string) => {
+    const { data, error } = await supabase.auth.verifyOtp({ email, token, type: 'email' });
+    if (error) throw error;
+    return data;
   },
-  happeningNow: () => request('/api/events/happening-now'),
-  recommended: () => request('/api/events/recommended'),
-  get: (id: string) => request(`/api/events/${id}`),
-  create: (data: any) => request('/api/events', { method: 'POST', body: JSON.stringify(data) }),
-  update: (id: string, data: any) => request(`/api/events/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  delete: (id: string) => request(`/api/events/${id}`, { method: 'DELETE' }),
-  rsvp: (id: string) => request(`/api/events/${id}/rsvp`, { method: 'POST' }),
-  attendees: (id: string) => request(`/api/events/${id}/attendees`),
-  friends: (id: string) => request(`/api/events/${id}/friends`),
-  photos: (id: string) => request(`/api/events/${id}/photos`),
-  deletePhoto: (eventId: string, photoId: string) => request(`/api/events/${eventId}/photos/${photoId}`, { method: 'DELETE' }),
+
+  signOut: () => supabase.auth.signOut(),
+  getSession: () => supabase.auth.getSession(),
+  onAuthStateChange: (cb: any) => supabase.auth.onAuthStateChange(cb),
 };
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// Clubs
-// ═══════════════════════════════════════════════════════════════════════════════
-export const clubs = {
-  list: (params?: Record<string, string>) => {
-    const query = params ? '?' + new URLSearchParams(params).toString() : '';
-    return request(`/api/clubs${query}`);
+// ── Profile ──────────────────────────────────────────────────────────────────
+export const profilesApi = {
+  get: async (id: string) => {
+    const { data, error } = await supabase.from('profiles').select('*').eq('id', id).single();
+    if (error) throw error;
+    return data;
   },
-  get: (id: string) => request(`/api/clubs/${id}`),
-  create: (data: any) => request('/api/clubs', { method: 'POST', body: JSON.stringify(data) }),
-  follow: (id: string) => request(`/api/clubs/${id}/follow`, { method: 'POST' }),
-  dashboard: (id: string) => request(`/api/clubs/${id}/dashboard`),
-  // Staff management
-  staff: (id: string) => request(`/api/clubs/${id}/staff`),
-  inviteStaff: (id: string, email: string, role: string) =>
-    request(`/api/clubs/${id}/staff/invite`, { method: 'POST', body: JSON.stringify({ email, role }) }),
-  staffInvites: (id: string) => request(`/api/clubs/${id}/staff/invites`),
-  updateStaffRole: (clubId: string, userId: string, role: string) =>
-    request(`/api/clubs/${clubId}/staff/${userId}`, { method: 'PUT', body: JSON.stringify({ role }) }),
-  removeStaff: (clubId: string, userId: string) =>
-    request(`/api/clubs/${clubId}/staff/${userId}`, { method: 'DELETE' }),
-  transferPresidency: (clubId: string, userId: string) =>
-    request(`/api/clubs/${clubId}/transfer`, { method: 'POST', body: JSON.stringify({ user_id: userId }) }),
-};
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// Users
-// ═══════════════════════════════════════════════════════════════════════════════
-export const users = {
-  me: () => request('/api/users/me'),
-  update: (data: any) => request('/api/users/me', { method: 'PUT', body: JSON.stringify(data) }),
-  feed: (params?: Record<string, string>) => {
-    const query = params ? '?' + new URLSearchParams(params).toString() : '';
-    return request(`/api/users/me/feed${query}`);
-  },
-  friendsActivity: () => request('/api/users/me/friends-activity'),
-  addFriend: (email: string) => request('/api/users/me/friends', { method: 'POST', body: JSON.stringify({ email }) }),
-  friends: () => request('/api/users/me/friends'),
-};
-
-// Notifications
-export const notifications = {
-  register: (pushToken: string) => request('/api/notifications/register', { method: 'POST', body: JSON.stringify({ push_token: pushToken }) }),
-};
-
-// Search
-export const search = {
-  query: (q: string, type?: string) => {
-    const params: Record<string, string> = { q };
-    if (type) params.type = type;
-    return request('/api/search?' + new URLSearchParams(params).toString());
+  update: async (id: string, updates: any) => {
+    const { data, error } = await supabase.from('profiles').update(updates).eq('id', id).select().single();
+    if (error) throw error;
+    return data;
   },
 };
 
-// Digest
-export const digest = {
-  weekly: () => request('/api/digest/weekly'),
-};
-
-// V2: Chat
-export const chat = {
-  messages: (clubId: string, before?: string) => {
-    const params: Record<string, string> = {};
-    if (before) params.before = before;
-    const query = Object.keys(params).length ? '?' + new URLSearchParams(params).toString() : '';
-    return request(`/api/chat/${clubId}/messages${query}`);
+// ── Clubs ────────────────────────────────────────────────────────────────────
+export const clubsApi = {
+  list: async () => {
+    const { data, error } = await supabase
+      .from('clubs')
+      .select('*, club_members(role, user_id)')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data;
   },
-  send: (clubId: string, content: string) =>
-    request(`/api/chat/${clubId}/messages`, { method: 'POST', body: JSON.stringify({ content }) }),
-  deleteMessage: (clubId: string, msgId: string) =>
-    request(`/api/chat/${clubId}/messages/${msgId}`, { method: 'DELETE' }),
+  get: async (id: string) => {
+    const { data, error } = await supabase
+      .from('clubs')
+      .select('*, club_members(role, user_id, profiles(name, avatar_url))')
+      .eq('id', id)
+      .single();
+    if (error) throw error;
+    return data;
+  },
+  create: async (club: any) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data, error } = await supabase.from('clubs').insert({ ...club, created_by: user?.id }).select().single();
+    if (error) throw error;
+    // Auto-assign creator as president
+    await supabase.from('club_members').insert({ club_id: data.id, user_id: user?.id, role: 'president' });
+    return data;
+  },
+  update: async (id: string, updates: any) => {
+    const { data, error } = await supabase.from('clubs').update(updates).eq('id', id).select().single();
+    if (error) throw error;
+    return data;
+  },
+  follow: async (clubId: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    await supabase.from('follows').insert({ club_id: clubId, user_id: user?.id });
+  },
+  unfollow: async (clubId: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    await supabase.from('follows').delete().eq('club_id', clubId).eq('user_id', user?.id);
+  },
 };
 
-// V2: Tickets
-export const tickets = {
-  getForEvent: (eventId: string) => request(`/api/tickets/event/${eventId}`),
-  purchase: (eventId: string) => request(`/api/tickets/event/${eventId}/purchase`, { method: 'POST' }),
-  mine: () => request('/api/tickets/mine'),
+// ── Events ───────────────────────────────────────────────────────────────────
+export const eventsApi = {
+  list: async (filters?: { category?: string; upcoming?: boolean }) => {
+    let q = supabase.from('events').select('*, clubs(name, logo_url)').eq('status', 'published');
+    if (filters?.category && filters.category !== 'All') q = q.eq('category', filters.category);
+    if (filters?.upcoming) q = q.gte('start_time', new Date().toISOString());
+    const { data, error } = await q.order('start_time', { ascending: true });
+    if (error) throw error;
+    return data;
+  },
+  get: async (id: string) => {
+    const { data, error } = await supabase
+      .from('events')
+      .select('*, clubs(name, logo_url, instagram), rsvps(user_id), event_photos(id, photo_url, user_id)')
+      .eq('id', id)
+      .single();
+    if (error) throw error;
+    return data;
+  },
+  create: async (event: any) => {
+    const { data, error } = await supabase.from('events').insert(event).select().single();
+    if (error) throw error;
+    return data;
+  },
+  update: async (id: string, updates: any) => {
+    const { data, error } = await supabase.from('events').update(updates).eq('id', id).select().single();
+    if (error) throw error;
+    return data;
+  },
+  rsvp: async (eventId: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    await supabase.from('rsvps').insert({ event_id: eventId, user_id: user?.id });
+  },
+  unrsvp: async (eventId: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    await supabase.from('rsvps').delete().eq('event_id', eventId).eq('user_id', user?.id);
+  },
 };
 
-// Points/rewards system removed
-
-// Upload — S3 presigned URL generation
-export const upload = {
-  getPresignedUrl: (contentType: string) =>
-    request(`/api/upload/presign?contentType=${encodeURIComponent(contentType)}`),
+// ── Highlander Link ──────────────────────────────────────────────────────────
+export const highlanderLink = {
+  search: async (query: string) => {
+    const res = await fetch(
+      `https://highlanderlink.ucr.edu/api/discovery/organization/search?query=${encodeURIComponent(query)}&top=10`
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.value || []).map((org: any) => ({
+      id: org.Id,
+      name: org.Name,
+      description: org.Summary,
+      logo_url: org.ProfilePicture,
+      websiteKey: org.WebsiteKey,
+      url: `https://highlanderlink.ucr.edu/organization/${org.WebsiteKey}`,
+    }));
+  },
 };
+
+// ── Storage (photos) ─────────────────────────────────────────────────────────
+export const storageApi = {
+  uploadPhoto: async (uri: string, bucket = 'photos') => {
+    const ext = uri.split('.').pop() || 'jpg';
+    const path = `${Date.now()}.${ext}`;
+    const res = await fetch(uri);
+    const blob = await res.blob();
+    const { error } = await supabase.storage.from(bucket).upload(path, blob, { contentType: `image/${ext}` });
+    if (error) throw error;
+    const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+    return data.publicUrl;
+  },
+};
+
+// Legacy compat exports
+export const API_URL = '';
+export const getAuthToken = async () => {
+  const { data } = await supabase.auth.getSession();
+  return data.session?.access_token || null;
+};
+export const setAuthToken = (_: any) => {};
+export const upload = { getPresignedUrl: async () => ({ uploadUrl: '', publicUrl: '' }) };
+export const users = profilesApi;
+export const clubs = clubsApi;
+export const events = eventsApi;

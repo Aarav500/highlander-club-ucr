@@ -4,8 +4,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import * as Linking from 'expo-linking';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { setAuthToken } from '../services/api';
+import { supabase } from '../lib/supabase';
 import { registerForPushNotifications, setupNotificationListeners } from '../services/notifications';
 import {
   useFonts,
@@ -50,20 +49,14 @@ export default function RootLayout() {
   const router = useRouter();
 
   useEffect(() => {
-    async function prepare() {
-      try {
-        const token = await AsyncStorage.getItem('auth_token');
-        if (token) {
-          setAuthToken(token);
-          setIsLoggedIn(true);
-        }
-      } catch (e) {
-        console.warn('Auth check failed:', e);
-      } finally {
-        setIsReady(true);
-      }
-    }
-    prepare();
+    supabase.auth.getSession().then(({ data }) => {
+      setIsLoggedIn(!!data.session);
+      setIsReady(true);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsLoggedIn(!!session);
+    });
+    return () => subscription.unsubscribe();
   }, []);
 
   // Push notifications setup
