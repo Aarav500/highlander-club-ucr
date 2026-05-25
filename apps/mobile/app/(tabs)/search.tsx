@@ -8,7 +8,7 @@ import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
-  useSharedValue, useAnimatedStyle, withSpring, withTiming,
+  useSharedValue, useAnimatedStyle, withSpring,
   FadeInDown, FadeInRight, ZoomIn,
 } from 'react-native-reanimated';
 import { Colors, Spacing, BorderRadius, FontSize, Fonts, Glass, Shadows, AnimTiming } from '../../constants/Colors';
@@ -122,7 +122,10 @@ export default function SearchScreen() {
     setHasSearched(true);
     try {
       const result = await searchApi.query(text, activeCategory !== 'All' ? activeCategory : undefined);
-      setResults(result.events || result || []);
+      const events = (result.events || []).map((e: any) => ({ ...e, _type: 'event' }));
+      const clubs = (result.clubs || []).map((c: any) => ({ ...c, _type: 'club' }));
+      const hlClubs = (result.highlanderClubs || []).map((c: any) => ({ ...c, _type: 'hl_club' }));
+      setResults([...events, ...clubs, ...hlClubs]);
     } catch { setResults([]); }
     finally { setSearching(false); }
   };
@@ -191,21 +194,37 @@ export default function SearchScreen() {
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ padding: Spacing.md, paddingBottom: 120 }}
           renderItem={({ item, index }) => {
-            const catColor = Colors.categories[item.category as keyof typeof Colors.categories] || theme.primary;
+            const isEvent = item._type === 'event';
+            const isClub = item._type === 'club' || item._type === 'hl_club';
+            const isHL = item._type === 'hl_club';
+            const catColor = isEvent
+              ? (Colors.categories[item.category as keyof typeof Colors.categories] || theme.primary)
+              : theme.accent;
+            const onPress = isEvent
+              ? () => router.push(`/event/${item.id}` as any)
+              : isHL
+                ? () => item.url && router.push(item.url as any)
+                : () => router.push(`/club/${item.id}` as any);
             return (
               <Animated.View entering={FadeInDown.delay(index * 50).springify()}>
-                <TouchableOpacity style={styles.resultCard} onPress={() => router.push(`/event/${item.id}` as any)} activeOpacity={0.8}>
+                <TouchableOpacity style={styles.resultCard} onPress={onPress} activeOpacity={0.8}>
                   <View style={[styles.resultIcon, { backgroundColor: catColor + '22' }]}>
-                    <Ionicons name="calendar" size={20} color={catColor} />
+                    <Ionicons name={isEvent ? 'calendar' : 'people'} size={20} color={catColor} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.resultTitle} numberOfLines={1}>{item.title}</Text>
-                    <Text style={styles.resultMeta}>{item.club_name} · {new Date(item.start_time).toLocaleDateString([], { month: 'short', day: 'numeric' })}</Text>
+                    <Text style={styles.resultTitle} numberOfLines={1}>{item.title || item.name}</Text>
+                    {isEvent
+                      ? <Text style={styles.resultMeta}>{item.clubs?.name || ''} · {new Date(item.start_time).toLocaleDateString([], { month: 'short', day: 'numeric' })}</Text>
+                      : <Text style={styles.resultMeta}>{isHL ? '🔗 Highlander Link' : `${item.member_count || 0} members`}</Text>
+                    }
                   </View>
-                  <View style={styles.rsvpBadge}>
-                    <Ionicons name="heart" size={11} color={theme.danger} />
-                    <Text style={styles.rsvpBadgeText}>{item.rsvp_count || 0}</Text>
-                  </View>
+                  {isEvent && (
+                    <View style={styles.rsvpBadge}>
+                      <Ionicons name="heart" size={11} color={theme.danger} />
+                      <Text style={styles.rsvpBadgeText}>{item.rsvp_count || 0}</Text>
+                    </View>
+                  )}
+                  {isClub && <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />}
                 </TouchableOpacity>
               </Animated.View>
             );

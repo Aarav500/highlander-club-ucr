@@ -163,19 +163,76 @@ export const storageApi = {
   },
 };
 
-// Search — queries both Supabase clubs/events + Highlander Link
+// ── Search (events + clubs + Highlander Link) ────────────────────────────────
 export const search = {
+  query: async (q: string, _category?: string) => {
+    const [evtRes, clubRes, hlClubs] = await Promise.all([
+      supabase.from('events').select('*, clubs(name, logo_url)').ilike('title', `%${q}%`).eq('status', 'published').limit(10),
+      supabase.from('clubs').select('*').ilike('name', `%${q}%`).limit(10),
+      highlanderLink.search(q),
+    ]);
+    return {
+      events: evtRes.data || [],
+      clubs: clubRes.data || [],
+      highlanderClubs: hlClubs,
+    };
+  },
   clubs: async (query: string) => {
-    // First search local DB
     const { data } = await supabase.from('clubs').select('*').ilike('name', `%${query}%`).limit(10);
-    // Also search Highlander Link
     const hlClubs = await highlanderLink.search(query);
-    const hlMapped = hlClubs.map((c: any) => ({ ...c, from_highlander_link: true }));
-    return [...(data || []), ...hlMapped];
+    return [...(data || []), ...hlClubs.map((c: any) => ({ ...c, from_highlander_link: true }))];
   },
   events: async (query: string) => {
     const { data } = await supabase.from('events').select('*, clubs(name, logo_url)').ilike('title', `%${query}%`).limit(10);
     return data || [];
+  },
+};
+
+// ── Club Chat ────────────────────────────────────────────────────────────────
+export const chat = {
+  messages: async (clubId: string) => {
+    const { data, error } = await supabase
+      .from('club_messages')
+      .select('*, profiles(name, avatar_url)')
+      .eq('club_id', clubId)
+      .order('created_at', { ascending: true })
+      .limit(100);
+    if (error) throw error;
+    return data || [];
+  },
+  send: async (clubId: string, content: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data, error } = await supabase
+      .from('club_messages')
+      .insert({ club_id: clubId, user_id: user?.id, content })
+      .select('*, profiles(name, avatar_url)')
+      .single();
+    if (error) throw error;
+    return data;
+  },
+  deleteMessage: async (_clubId: string, messageId: string) => {
+    const { error } = await supabase.from('club_messages').delete().eq('id', messageId);
+    if (error) throw error;
+  },
+};
+
+// ── Tickets (maps to RSVPs for free events) ───────────────────────────────────
+export const tickets = {
+  getForEvent: async (eventId: string) => {
+    const { data: event, error } = await supabase
+      .from('events')
+      .select('*, clubs(name, logo_url), rsvps(user_id)')
+      .eq('id', eventId)
+      .single();
+    if (error) throw error;
+    const { data: { user } } = await supabase.auth.getUser();
+    const hasRsvp = (event.rsvps || []).some((r: any) => r.user_id === user?.id);
+    return { event, hasTicket: hasRsvp, ticketCount: event.rsvps?.length || 0 };
+  },
+  purchase: async (eventId: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    const { error } = await supabase.from('rsvps').insert({ event_id: eventId, user_id: user?.id });
+    if (error) throw error;
   },
 };
 

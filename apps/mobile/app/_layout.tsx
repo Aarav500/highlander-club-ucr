@@ -3,7 +3,7 @@ import { Stack, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Linking from 'expo-linking';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { registerForPushNotifications, setupNotificationListeners } from '../services/notifications';
 import {
@@ -47,23 +47,26 @@ export default function RootLayout() {
   const [isReady, setIsReady] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const router = useRouter();
+  const redirected = useRef(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      setIsLoggedIn(!!data.session);
+      const loggedIn = !!data.session;
+      setIsLoggedIn(loggedIn);
       setIsReady(true);
+      if (!redirected.current) {
+        redirected.current = true;
+        if (loggedIn) router.replace('/(tabs)' as any);
+        else router.replace('/(auth)/login' as any);
+      }
     });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setIsLoggedIn(!!session);
+      if (event === 'SIGNED_IN' && session) router.replace('/(tabs)' as any);
+      if (event === 'SIGNED_OUT') router.replace('/(auth)/login' as any);
     });
     return () => subscription.unsubscribe();
   }, []);
-
-  useEffect(() => {
-    if (!isReady) return;
-    if (!isLoggedIn) router.replace('/(auth)/login' as any);
-    else router.replace('/(tabs)' as any);
-  }, [isReady, isLoggedIn]);
 
   // Push notifications setup
   useEffect(() => {
