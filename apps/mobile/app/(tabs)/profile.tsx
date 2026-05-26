@@ -6,14 +6,14 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import * as WebBrowser from 'expo-web-browser';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown, FadeIn, ZoomIn } from 'react-native-reanimated';
 import { Colors, Spacing, BorderRadius, FontSize, Fonts, Glass, Shadows, Gradients } from '../../constants/Colors';
 import { useFadeIn, useSpringPress } from '../../constants/animations';
-import { users as usersApi, events as eventsApi, clubs as clubsApi, upload as uploadApi, setAuthToken } from '../../services/api';
+import { users as usersApi, storageApi } from '../../services/api';
+import { supabase } from '../../lib/supabase';
 import { AmbientBackground, Bounceable, GlassCard } from '../../components/GlassComponents';
 
 const theme = Colors.dark;
@@ -41,16 +41,16 @@ export default function ProfileScreen() {
     try {
       const me = await usersApi.me();
       setUser(me);
-      const [evts, allClubs, allFriends] = await Promise.all([
-        eventsApi.list().catch(() => []),
-        clubsApi.list().catch(() => []),
-        usersApi.friends().catch(() => []),
+      const [rsvpRes, followRes, memberRes] = await Promise.all([
+        supabase.from('rsvps').select('event_id, events(*, clubs(name,logo_url))').eq('user_id', me.id),
+        supabase.from('follows').select('club_id, clubs(*)').eq('user_id', me.id),
+        supabase.from('club_members').select('role, clubs(*)').eq('user_id', me.id),
       ]);
-      setMyEvents(evts.filter((e: any) => e.user_rsvped));
-      setFollowedClubs(allClubs.filter((c: any) => c.user_follows));
-      setMyClubs(allClubs.filter((c: any) => c.user_role));
-      setFriends(allFriends);
-    } catch { setUser(null); }
+      setMyEvents((rsvpRes.data || []).map((r: any) => r.events).filter(Boolean));
+      setFollowedClubs((followRes.data || []).map((r: any) => r.clubs).filter(Boolean));
+      setMyClubs((memberRes.data || []).map((r: any) => ({ ...r.clubs, user_role: r.role })).filter(Boolean));
+      setFriends([]);
+    } catch (e) { console.error('Profile load error:', e); setUser(null); }
     finally { setLoading(false); }
   };
 
@@ -62,10 +62,8 @@ export default function ProfileScreen() {
     const asset = result.assets[0];
     setUploadingAvatar(true);
     try {
-      const { uploadUrl, publicUrl } = await uploadApi.getPresignedUrl('image/jpeg');
-      const blob = await fetch(asset.uri).then((r) => r.blob());
-      await fetch(uploadUrl, { method: 'PUT', body: blob, headers: { 'Content-Type': 'image/jpeg' } });
-      await usersApi.update({ avatar_url: publicUrl });
+      const publicUrl = await storageApi.uploadPhoto(asset.uri, 'avatars');
+      await usersApi.update(user.id, { avatar_url: publicUrl });
       setUser((u: any) => ({ ...u, avatar_url: publicUrl }));
     } catch {
       Alert.alert('Upload Failed', 'Could not upload photo. Try a smaller image.');
@@ -333,8 +331,7 @@ export default function ProfileScreen() {
                 {
                   text: 'Sign Out', style: 'destructive',
                   onPress: async () => {
-                    await AsyncStorage.removeItem('auth_token');
-                    setAuthToken(null);
+                    await supabase.auth.signOut();
                     router.replace('/(auth)/login' as any);
                   },
                 },

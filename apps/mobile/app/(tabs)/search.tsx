@@ -13,7 +13,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Colors, Spacing, BorderRadius, FontSize, Fonts, Glass, Shadows, AnimTiming } from '../../constants/Colors';
 import { useSpringPress, useFadeIn } from '../../constants/animations';
-import { search as searchApi, events as eventsApi, clubs as clubsApi } from '../../services/api';
+import { search as searchApi, events as eventsApi, clubs as clubsApi, highlanderLink } from '../../services/api';
 
 const theme = Colors.dark;
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -104,12 +104,17 @@ export default function SearchScreen() {
 
   const loadDiscovery = async () => {
     try {
-      const [evts, clubs] = await Promise.all([
+      const [evts, localClubs, hlClubs] = await Promise.all([
         eventsApi.list().catch(() => []),
         clubsApi.list().catch(() => []),
+        highlanderLink.search('ucr').catch(() => []),
       ]);
       setTrending(evts.sort((a: any, b: any) => (b.rsvp_count || 0) - (a.rsvp_count || 0)).slice(0, 4));
-      setPopularClubs(clubs.slice(0, 8));
+      const merged = [
+        ...localClubs,
+        ...hlClubs.map((c: any) => ({ ...c, from_highlander_link: true })),
+      ].slice(0, 12);
+      setPopularClubs(merged);
     } catch (err) {
       console.error('Discovery load error:', err);
     }

@@ -42,11 +42,19 @@ export const profilesApi = {
     if (error) throw error;
     return data;
   },
+  me: async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not logged in');
+    const { data, error } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+    if (error) throw error;
+    return data;
+  },
   update: async (id: string, updates: any) => {
     const { data, error } = await supabase.from('profiles').update(updates).eq('id', id).select().single();
     if (error) throw error;
     return data;
   },
+  friends: async () => [],
 };
 
 // ── Clubs ────────────────────────────────────────────────────────────────────
