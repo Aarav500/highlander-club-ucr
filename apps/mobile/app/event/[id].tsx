@@ -50,19 +50,19 @@ export default function EventDetailScreen() {
 
   const loadEvent = async () => {
     try {
-      const [eventData, friendsData, attendeeData, photosData] = await Promise.all([
-        eventsApi.get(id as string), eventsApi.friends(id as string),
-        eventsApi.attendees(id as string), eventsApi.photos(id as string)
-      ]);
-      setEvent(eventData); setFriends(friendsData); setAttendees(attendeeData); setPhotos(photosData);
+      const eventData = await eventsApi.get(id as string);
+      setEvent(eventData);
+      setPhotos(eventData.event_photos || []);
+      setAttendees(eventData.rsvps || []);
+      setFriends({ friends: [], count: 0 });
     } catch (err) { console.error('Event load error:', err); }
     finally { setLoading(false); }
   };
 
   const handleRSVP = async () => {
     try {
-      const result = await eventsApi.rsvp(id as string);
-      setEvent((prev: any) => ({ ...prev, user_rsvped: result.rsvped, rsvp_count: String(result.rsvp_count) }));
+      await eventsApi.rsvp(id as string);
+      setEvent((prev: any) => ({ ...prev, user_rsvped: true, rsvp_count: String(Number(prev.rsvp_count || 0) + 1) }));
     } catch (err: any) {
       if (err.message?.includes('409') || err.message?.includes('full')) Alert.alert('Event Full', 'Maximum capacity reached.');
     }

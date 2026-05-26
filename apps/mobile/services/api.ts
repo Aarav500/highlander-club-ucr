@@ -259,7 +259,7 @@ export const claimsApi = {
   // Admin only
   listPending: async () => {
     const { data, error } = await supabase.from('club_claims')
-      .select('*, clubs(name, category), profiles(name, email)')
+      .select('*, clubs(name, category), user:profiles!user_id(name, email)')
       .eq('status', 'pending').order('created_at', { ascending: true });
     if (error) throw error;
     return data || [];

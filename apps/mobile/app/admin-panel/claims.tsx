@@ -21,7 +21,7 @@ export default function ClaimsAdminScreen() {
   };
 
   const handleApprove = async (claim: any) => {
-    Alert.alert('Approve', `Grant ${claim.profiles?.name} the role of ${claim.role} in ${claim.clubs?.name}?`, [
+    Alert.alert('Approve', `Grant ${claim.user?.name} the role of ${claim.role} in ${claim.clubs?.name}?`, [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Approve', onPress: async () => {
         try {
@@ -34,7 +34,7 @@ export default function ClaimsAdminScreen() {
   };
 
   const handleReject = async (claim: any) => {
-    Alert.alert('Reject', `Reject ${claim.profiles?.name}'s claim for ${claim.clubs?.name}?`, [
+    Alert.alert('Reject', `Reject ${claim.user?.name}'s claim for ${claim.clubs?.name}?`, [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Reject', style: 'destructive', onPress: async () => {
         try {
@@ -77,7 +77,7 @@ export default function ClaimsAdminScreen() {
                   <Text style={styles.roleText}>{item.role?.replace('_', ' ')}</Text>
                 </View>
               </View>
-              <Text style={styles.userName}>{item.profiles?.name} · {item.profiles?.email}</Text>
+              <Text style={styles.userName}>{item.user?.name} · {item.user?.email}</Text>
               {item.message && <Text style={styles.message}>{item.message}</Text>}
               <Text style={styles.time}>{new Date(item.created_at).toLocaleDateString()}</Text>
               <View style={styles.actions}>
