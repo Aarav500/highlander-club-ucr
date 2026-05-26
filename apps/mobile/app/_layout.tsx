@@ -74,9 +74,8 @@ export default function RootLayout() {
     if (!isReady || !isLoggedIn) return;
     registerForPushNotifications();
     const cleanup = setupNotificationListeners();
-    // Sync Highlander Link clubs into Supabase in background
-    const terms = ['ucr', 'engineering', 'business', 'cultural', 'sports', 'pre-med', 'art'];
-    terms.forEach(t => highlanderLink.syncToSupabase(t));
+    // Sync all Highlander Link clubs into Supabase in background
+    highlanderLink.syncToSupabase();
     return cleanup;
   }, [isReady, isLoggedIn]);
 

@@ -150,49 +150,55 @@ function mapHLCategory(name: string, summary: string): string {
   return 'Cultural';
 }
 
+const HL_SEARCH = 'https://highlanderlink.ucr.edu/api/discovery/search/organizations';
+
+function parseHLOrg(org: any) {
+  return {
+    id: String(org.Id),
+    name: org.Name,
+    description: org.Summary || null,
+    logo_url: null,
+    websiteKey: org.WebsiteKey,
+    url: `https://highlanderlink.ucr.edu/organization/${org.WebsiteKey}`,
+    from_highlander_link: true,
+    highlander_link_id: String(org.Id),
+    category: (org.CategoryNames?.[0]) || mapHLCategory(org.Name, org.Summary || ''),
+  };
+}
+
 export const highlanderLink = {
   search: async (query: string) => {
     try {
-      const res = await fetch(
-        `https://highlanderlink.ucr.edu/api/discovery/organization/search?query=${encodeURIComponent(query)}&top=20`,
-        { headers: { 'Accept': 'application/json' } }
-      );
+      const res = await fetch(`${HL_SEARCH}?query=${encodeURIComponent(query)}&limit=20`);
       if (!res.ok) return [];
       const data = await res.json();
-      return (data.value || []).map((org: any) => ({
-        id: String(org.Id),
-        name: org.Name,
-        description: org.Summary,
-        logo_url: org.ProfilePicture || null,
-        websiteKey: org.WebsiteKey,
-        url: `https://highlanderlink.ucr.edu/organization/${org.WebsiteKey}`,
-        from_highlander_link: true,
-        highlander_link_id: String(org.Id),
-      }));
+      return (data.value || []).map(parseHLOrg);
     } catch { return []; }
   },
 
-  // Sync HL clubs into Supabase so all users see them
-  syncToSupabase: async (query: string) => {
+  syncToSupabase: async () => {
     try {
-      const res = await fetch(
-        `https://highlanderlink.ucr.edu/api/discovery/organization/search?query=${encodeURIComponent(query)}&top=100`,
-        { headers: { 'Accept': 'application/json' } }
-      );
-      if (!res.ok) return;
-      const data = await res.json();
-      const orgs = data.value || [];
-      if (orgs.length === 0) return;
-      const clubs = orgs.map((org: any) => ({
-        name: org.Name,
-        description: org.Summary || null,
-        logo_url: org.ProfilePicture || null,
-        category: mapHLCategory(org.Name, org.Summary || ''),
-        highlander_link_key: org.WebsiteKey || null,
-        highlander_link_id: String(org.Id),
-      }));
-      await supabase.from('clubs').upsert(clubs, { onConflict: 'highlander_link_id', ignoreDuplicates: true });
-    } catch { /* silent — sync is best-effort */ }
+      let skip = 0;
+      const limit = 100;
+      while (true) {
+        const res = await fetch(`${HL_SEARCH}?query=&limit=${limit}&skip=${skip}`);
+        if (!res.ok) break;
+        const data = await res.json();
+        const orgs: any[] = data.value || [];
+        if (orgs.length === 0) break;
+        const clubs = orgs.map((org: any) => ({
+          name: org.Name,
+          description: org.Summary || null,
+          logo_url: null,
+          category: (org.CategoryNames?.[0]) || mapHLCategory(org.Name, org.Summary || ''),
+          highlander_link_key: org.WebsiteKey || null,
+          highlander_link_id: String(org.Id),
+        }));
+        await supabase.from('clubs').upsert(clubs, { onConflict: 'highlander_link_id', ignoreDuplicates: true });
+        if (orgs.length < limit) break;
+        skip += limit;
+      }
+    } catch { /* silent */ }
   },
 };
 
