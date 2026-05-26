@@ -60,11 +60,19 @@ function ClubAvatar({ club, index }: { club: any; index: number }) {
   const router = useRouter();
   const { animatedStyle: pressStyle, onPressIn, onPressOut } = useSpringPress({ scaleTo: 0.9 });
 
+  const handlePress = () => {
+    if (club.from_highlander_link && club.url) {
+      WebBrowser.openBrowserAsync(club.url);
+    } else {
+      router.push(`/club/${club.id}` as any);
+    }
+  };
+
   return (
     <Animated.View entering={ZoomIn.delay(200 + index * 60).springify().damping(14)}>
       <AnimatedTouchable
         style={[styles.clubCard, pressStyle]}
-        onPress={() => router.push(`/club/${club.id}` as any)}
+        onPress={handlePress}
         onPressIn={onPressIn}
         onPressOut={onPressOut}
         activeOpacity={1}
@@ -209,7 +217,7 @@ export default function SearchScreen() {
             const onPress = isEvent
               ? () => router.push(`/event/${item.id}` as any)
               : isHL
-                ? () => item.url && router.push(item.url as any)
+                ? () => item.url && WebBrowser.openBrowserAsync(item.url)
                 : () => router.push(`/club/${item.id}` as any);
             return (
               <Animated.View entering={FadeInDown.delay(index * 50).springify()}>
