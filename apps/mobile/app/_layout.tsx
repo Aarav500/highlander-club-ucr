@@ -5,6 +5,7 @@ import * as Linking from 'expo-linking';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { highlanderLink } from '../services/api';
 import { registerForPushNotifications, setupNotificationListeners } from '../services/notifications';
 import {
   useFonts,
@@ -68,11 +69,14 @@ export default function RootLayout() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Push notifications setup
+  // Push notifications + background club sync
   useEffect(() => {
     if (!isReady || !isLoggedIn) return;
     registerForPushNotifications();
     const cleanup = setupNotificationListeners();
+    // Sync Highlander Link clubs into Supabase in background
+    const terms = ['ucr', 'engineering', 'business', 'cultural', 'sports', 'pre-med', 'art'];
+    terms.forEach(t => highlanderLink.syncToSupabase(t));
     return cleanup;
   }, [isReady, isLoggedIn]);
 

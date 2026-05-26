@@ -139,21 +139,60 @@ export const eventsApi = {
 };
 
 // ── Highlander Link ──────────────────────────────────────────────────────────
+function mapHLCategory(name: string, summary: string): string {
+  const t = (name + ' ' + summary).toLowerCase();
+  if (/tech|computer|engineer|software|data|ai|robotics|cyber/.test(t)) return 'Technology';
+  if (/business|finance|entrepreneur|marketing|accounting|invest/.test(t)) return 'Business';
+  if (/art|music|danc|theater|media|film|photo/.test(t)) return 'Arts';
+  if (/sport|athletic|fitness|hiking|climb|soccer|basketball|tennis/.test(t)) return 'Sports';
+  if (/pre.med|health|nurs|biolog|pharmacy|dental|medical/.test(t)) return 'Health';
+  if (/volunteer|service|communit|humanitarian/.test(t)) return 'Service';
+  return 'Cultural';
+}
+
 export const highlanderLink = {
   search: async (query: string) => {
-    const res = await fetch(
-      `https://highlanderlink.ucr.edu/api/discovery/organization/search?query=${encodeURIComponent(query)}&top=10`
-    );
-    if (!res.ok) return [];
-    const data = await res.json();
-    return (data.value || []).map((org: any) => ({
-      id: org.Id,
-      name: org.Name,
-      description: org.Summary,
-      logo_url: org.ProfilePicture,
-      websiteKey: org.WebsiteKey,
-      url: `https://highlanderlink.ucr.edu/organization/${org.WebsiteKey}`,
-    }));
+    try {
+      const res = await fetch(
+        `https://highlanderlink.ucr.edu/api/discovery/organization/search?query=${encodeURIComponent(query)}&top=20`,
+        { headers: { 'Accept': 'application/json' } }
+      );
+      if (!res.ok) return [];
+      const data = await res.json();
+      return (data.value || []).map((org: any) => ({
+        id: String(org.Id),
+        name: org.Name,
+        description: org.Summary,
+        logo_url: org.ProfilePicture || null,
+        websiteKey: org.WebsiteKey,
+        url: `https://highlanderlink.ucr.edu/organization/${org.WebsiteKey}`,
+        from_highlander_link: true,
+        highlander_link_id: String(org.Id),
+      }));
+    } catch { return []; }
+  },
+
+  // Sync HL clubs into Supabase so all users see them
+  syncToSupabase: async (query: string) => {
+    try {
+      const res = await fetch(
+        `https://highlanderlink.ucr.edu/api/discovery/organization/search?query=${encodeURIComponent(query)}&top=100`,
+        { headers: { 'Accept': 'application/json' } }
+      );
+      if (!res.ok) return;
+      const data = await res.json();
+      const orgs = data.value || [];
+      if (orgs.length === 0) return;
+      const clubs = orgs.map((org: any) => ({
+        name: org.Name,
+        description: org.Summary || null,
+        logo_url: org.ProfilePicture || null,
+        category: mapHLCategory(org.Name, org.Summary || ''),
+        highlander_link_key: org.WebsiteKey || null,
+        highlander_link_id: String(org.Id),
+      }));
+      await supabase.from('clubs').upsert(clubs, { onConflict: 'highlander_link_id', ignoreDuplicates: true });
+    } catch { /* silent — sync is best-effort */ }
   },
 };
 
