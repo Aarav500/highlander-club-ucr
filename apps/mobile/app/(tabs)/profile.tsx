@@ -321,6 +321,17 @@ export default function ProfileScreen() {
           )
         )}
 
+        {/* Admin: Club Claims */}
+        {user.is_admin && (
+          <Animated.View entering={FadeIn.delay(550)}>
+            <TouchableOpacity style={styles.adminBtn} onPress={() => router.push('/admin-panel/claims' as any)}>
+              <Ionicons name="shield-checkmark" size={18} color="#FFB800" />
+              <Text style={styles.adminBtnText}>Review Club Claim Requests</Text>
+              <Ionicons name="chevron-forward" size={16} color="#FFB800" />
+            </TouchableOpacity>
+          </Animated.View>
+        )}
+
         {/* Sign Out */}
         <Animated.View entering={FadeIn.delay(600)}>
           <TouchableOpacity
@@ -464,4 +475,11 @@ const styles = StyleSheet.create({
     backgroundColor: theme.danger + '08',
   },
   signOutText: { fontFamily: Fonts.headingMed, color: theme.danger, fontSize: FontSize.md },
+  adminBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
+    marginHorizontal: Spacing.md, marginBottom: Spacing.sm, paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.md, borderRadius: BorderRadius.md,
+    borderWidth: 1, borderColor: '#FFB80044', backgroundColor: '#FFB80011',
+  },
+  adminBtnText: { flex: 1, fontFamily: Fonts.headingMed, color: '#FFB800', fontSize: FontSize.sm },
 });

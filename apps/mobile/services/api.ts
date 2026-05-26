@@ -241,6 +241,50 @@ export const search = {
   },
 };
 
+// ── Club Claims ──────────────────────────────────────────────────────────────
+export const claimsApi = {
+  submit: async (clubId: string, role: string, message: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data, error } = await supabase.from('club_claims')
+      .upsert({ club_id: clubId, user_id: user?.id, role, message, status: 'pending' }, { onConflict: 'club_id,user_id' })
+      .select().single();
+    if (error) throw error;
+    return data;
+  },
+  myClaimForClub: async (clubId: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data } = await supabase.from('club_claims').select('*').eq('club_id', clubId).eq('user_id', user?.id).maybeSingle();
+    return data;
+  },
+  // Admin only
+  listPending: async () => {
+    const { data, error } = await supabase.from('club_claims')
+      .select('*, clubs(name, category), profiles(name, email)')
+      .eq('status', 'pending').order('created_at', { ascending: true });
+    if (error) throw error;
+    return data || [];
+  },
+  approve: async (claimId: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data: claim, error: ce } = await supabase.from('club_claims')
+      .update({ status: 'approved', reviewed_by: user?.id, reviewed_at: new Date().toISOString() })
+      .eq('id', claimId).select().single();
+    if (ce) throw ce;
+    // Grant role
+    const { error: me } = await supabase.from('club_members')
+      .upsert({ club_id: claim.club_id, user_id: claim.user_id, role: claim.role }, { onConflict: 'club_id,user_id' });
+    if (me) throw me;
+    return claim;
+  },
+  reject: async (claimId: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    const { error } = await supabase.from('club_claims')
+      .update({ status: 'rejected', reviewed_by: user?.id, reviewed_at: new Date().toISOString() })
+      .eq('id', claimId);
+    if (error) throw error;
+  },
+};
+
 // ── Club Chat ────────────────────────────────────────────────────────────────
 export const chat = {
   messages: async (clubId: string) => {

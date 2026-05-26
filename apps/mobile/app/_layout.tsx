@@ -178,6 +178,10 @@ export default function RootLayout() {
             animationDuration: 350,
           }}
         />
+        <Stack.Screen
+          name="admin-panel/claims"
+          options={{ headerShown: false, presentation: 'modal', animation: 'slide_from_bottom', animationDuration: 350 }}
+        />
         <Stack.Screen name="+not-found" />
       </Stack>
       <StatusBar style="light" />

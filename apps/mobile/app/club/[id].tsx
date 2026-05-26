@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, Image,
-  StyleSheet, ActivityIndicator, Platform,
+  StyleSheet, ActivityIndicator, Alert, TextInput, Modal, Platform, ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -9,7 +9,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown, ZoomIn } from 'react-native-reanimated';
 import { Colors, Spacing, BorderRadius, FontSize, Fonts, Glass, Shadows, Gradients } from '../../constants/Colors';
 import { useSpringPress, useGlowPulse } from '../../constants/animations';
-import { clubs as clubsApi } from '../../services/api';
+import { clubs as clubsApi, claimsApi } from '../../services/api';
 
 const theme = Colors.dark;
 const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
@@ -19,6 +19,11 @@ export default function ClubDetailScreen() {
   const router = useRouter();
   const [club, setClub] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [claim, setClaim] = useState<any>(null);
+  const [claimModal, setClaimModal] = useState(false);
+  const [claimMessage, setClaimMessage] = useState('');
+  const [claimRole, setClaimRole] = useState('president');
+  const [submitting, setSubmitting] = useState(false);
 
   const glowStyle = useGlowPulse({ minScale: 0.92, maxScale: 1.08, duration: 3000 });
   const { animatedStyle: followPress, onPressIn, onPressOut } = useSpringPress({ scaleTo: 0.95 });
@@ -26,15 +31,35 @@ export default function ClubDetailScreen() {
   useEffect(() => { loadClub(); }, [id]);
 
   const loadClub = async () => {
-    try { setClub(await clubsApi.get(id as string)); }
-    catch { console.error('Club load error'); }
+    try {
+      const [clubData, claimData] = await Promise.all([
+        clubsApi.get(id as string),
+        claimsApi.myClaimForClub(id as string).catch(() => null),
+      ]);
+      setClub(clubData);
+      setClaim(claimData);
+    } catch { console.error('Club load error'); }
     finally { setLoading(false); }
   };
 
+  const handleSubmitClaim = async () => {
+    if (!claimMessage.trim()) { Alert.alert('Please describe your role in the club'); return; }
+    setSubmitting(true);
+    try {
+      const result = await claimsApi.submit(id as string, claimRole, claimMessage.trim());
+      setClaim(result);
+      setClaimModal(false);
+      Alert.alert('Request Submitted', 'We\'ll review your request and get back to you shortly.');
+    } catch (e: any) { Alert.alert('Error', e.message); }
+    finally { setSubmitting(false); }
+  };
+
+  const isAlreadyMember = club?.club_members?.some((m: any) => m.user_id === club?.current_user_id);
+
   const handleFollow = async () => {
     try {
-      const result = await clubsApi.follow(id as string);
-      setClub((prev: any) => ({ ...prev, user_follows: result.following, follower_count: String(result.follower_count) }));
+      await clubsApi.follow(id as string);
+      setClub((prev: any) => ({ ...prev, user_follows: true }));
     } catch {}
   };
 
@@ -140,6 +165,27 @@ export default function ClubDetailScreen() {
         <Text style={styles.sectionTitle}>Upcoming Events</Text>
       </Animated.View>
 
+      {/* Claim this club — only for HL clubs without a president */}
+      {club.highlander_link_id && !club.club_members?.some((m: any) => m.role === 'president') && (
+        <Animated.View entering={FadeInDown.delay(420).springify()} style={styles.claimBanner}>
+          {claim ? (
+            <View style={styles.claimStatus}>
+              <Ionicons name={claim.status === 'pending' ? 'time-outline' : claim.status === 'approved' ? 'checkmark-circle' : 'close-circle'} size={18}
+                color={claim.status === 'approved' ? '#4ADE80' : claim.status === 'rejected' ? theme.danger : theme.textMuted} />
+              <Text style={styles.claimStatusText}>
+                {claim.status === 'pending' ? 'Claim pending review' : claim.status === 'approved' ? 'Claim approved!' : 'Claim rejected'}
+              </Text>
+            </View>
+          ) : (
+            <TouchableOpacity style={styles.claimBtn} onPress={() => setClaimModal(true)}>
+              <Ionicons name="shield-checkmark-outline" size={16} color={theme.primary} />
+              <Text style={styles.claimBtnText}>Are you an officer of this club? Request to manage it</Text>
+              <Ionicons name="chevron-forward" size={14} color={theme.textMuted} />
+            </TouchableOpacity>
+          )}
+        </Animated.View>
+      )}
+
       <FlatList
         data={club.upcoming_events || []}
         keyExtractor={(item) => item.id}
@@ -162,6 +208,45 @@ export default function ClubDetailScreen() {
           </View>
         }
       />
+
+      {/* Claim Modal */}
+      <Modal visible={claimModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Request Club Access</Text>
+            <Text style={styles.modalSub}>Tell us your role in <Text style={{ color: theme.accent }}>{club.name}</Text>. An admin will review and verify your request.</Text>
+
+            <Text style={styles.modalLabel}>Your role</Text>
+            <View style={styles.roleRow}>
+              {['president', 'vice_president', 'officer'].map(r => (
+                <TouchableOpacity key={r} style={[styles.roleChip, claimRole === r && styles.roleChipActive]} onPress={() => setClaimRole(r)}>
+                  <Text style={[styles.roleChipText, claimRole === r && { color: theme.primary }]}>{r.replace('_', ' ')}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={styles.modalLabel}>Why should we verify you?</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="e.g. I'm the current president, my HighlanderLink profile is..."
+              placeholderTextColor={theme.textMuted}
+              value={claimMessage}
+              onChangeText={setClaimMessage}
+              multiline
+              numberOfLines={4}
+            />
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setClaimModal(false)}>
+                <Text style={{ color: theme.textMuted, fontFamily: Fonts.body }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.submitBtn, submitting && { opacity: 0.6 }]} onPress={handleSubmitClaim} disabled={submitting}>
+                <Text style={{ color: '#FFF', fontFamily: Fonts.headingMed }}>Submit Request</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -214,4 +299,24 @@ const styles = StyleSheet.create({
 
   emptyState: { alignItems: 'center', marginTop: 48 },
   emptyText: { fontSize: FontSize.md, color: theme.textMuted, fontFamily: Fonts.body, marginTop: Spacing.sm },
+
+  claimBanner: { marginHorizontal: Spacing.md, marginBottom: Spacing.sm, borderRadius: BorderRadius.md, borderWidth: 1, borderColor: theme.primary + '44', backgroundColor: theme.primary + '10', overflow: 'hidden' },
+  claimBtn: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, padding: Spacing.md },
+  claimBtnText: { flex: 1, fontFamily: Fonts.body, color: theme.textSecondary, fontSize: FontSize.sm },
+  claimStatus: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, padding: Spacing.md },
+  claimStatusText: { fontFamily: Fonts.body, color: theme.textSecondary, fontSize: FontSize.sm },
+
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
+  modalCard: { backgroundColor: theme.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: Spacing.lg, paddingBottom: 40, borderWidth: 1, borderColor: Glass.border },
+  modalTitle: { fontFamily: Fonts.heading, color: theme.text, fontSize: FontSize.xl, marginBottom: Spacing.xs },
+  modalSub: { fontFamily: Fonts.body, color: theme.textSecondary, fontSize: FontSize.sm, marginBottom: Spacing.lg, lineHeight: 20 },
+  modalLabel: { fontFamily: Fonts.headingMed, color: theme.textSecondary, fontSize: FontSize.xs, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: Spacing.sm },
+  roleRow: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.lg },
+  roleChip: { paddingHorizontal: Spacing.md, paddingVertical: 8, borderRadius: BorderRadius.full, borderWidth: 1, borderColor: Glass.border, backgroundColor: Glass.background },
+  roleChipActive: { borderColor: theme.primary, backgroundColor: theme.primary + '20' },
+  roleChipText: { fontFamily: Fonts.body, color: theme.textMuted, fontSize: FontSize.sm, textTransform: 'capitalize' },
+  modalInput: { backgroundColor: Glass.background, borderRadius: BorderRadius.md, borderWidth: 1, borderColor: Glass.border, padding: Spacing.md, color: theme.text, fontFamily: Fonts.body, fontSize: FontSize.sm, minHeight: 100, textAlignVertical: 'top', marginBottom: Spacing.lg },
+  modalActions: { flexDirection: 'row', gap: Spacing.sm },
+  cancelBtn: { flex: 1, padding: Spacing.md, borderRadius: BorderRadius.md, borderWidth: 1, borderColor: Glass.border, alignItems: 'center' },
+  submitBtn: { flex: 2, padding: Spacing.md, borderRadius: BorderRadius.md, backgroundColor: theme.primary, alignItems: 'center' },
 });
